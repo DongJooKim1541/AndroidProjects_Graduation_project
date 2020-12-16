@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/background3"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_problem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/nexonfootballgothic_b"
+            android:gravity="center"
+            android:paddingTop="200dp"
+            android:textColor="#000000"
+            android:textSize="20dp" />
+
+        <ImageView
+            android:id="@+id/problem_image"
+            android:layout_width="300dp"
+            android:layout_height="200dp"
+            android:layout_gravity="center"
+            android:scaleType="fitCenter"
+            tools:srcCompat="@tools:sample/avatars" />
+
+        <RadioGroup
+            android:id="@+id/rg_answer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/rb_answer1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1번 " />
+
+            <RadioButton
+                android:id="@+id/rb_answer2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2번 " />
+
+            <RadioButton
+                android:id="@+id/rb_answer3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="3번 " />
+
+            <RadioButton
+                android:id="@+id/rb_answer4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="4번 " />
+
+        </RadioGroup>
+
+        <TextView
+            android:id="@+id/tv_result"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+</LinearLayout>

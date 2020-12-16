@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:descendantFocusability="blocksDescendants"
+    android:orientation="horizontal">
+    <!--자식뷰의 포커스를 해제하는 기능-->
+
+    <!--
+        리스트 뷰의 각 항목(Item)을 구성할 xml
+    -->
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="145dp"
+        android:layout_height="26dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="20dp"
+        android:layout_weight="1"
+        app:srcCompat="@drawable/list_icon" />
+
+    <TextView
+        android:id="@+id/list_switch_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="20dp"
+        android:layout_weight="1"
+        android:fontFamily="@font/nexonfootballgothic_l"
+        android:text="잠금화면 사용 여부"
+        android:textColor="#000000"
+        android:textSize="20dp" />
+
+
+    <Switch
+        android:id="@+id/switch_lock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="20dp"
+        android:textSize="16dp" />
+
+
+</LinearLayout>
