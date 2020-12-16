@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <ImageView
+        android:id="@+id/iv_shop_panel"
+        android:layout_width="match_parent"
+        android:layout_height="161dp"
+        android:scaleType="fitStart"
+        app:srcCompat="@drawable/shop_panel2" />
+
+    <TextView
+        android:id="@+id/tv_currentpoint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/nexonfootballgothic_b"
+        android:gravity="center"
+        android:textColor="#000000"
+        android:textSize="20dp" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:layout_marginLeft="30dp"
+                android:layout_marginTop="50dp"
+                android:layout_marginRight="30dp"
+
+                android:backgroundTint="#f4f0ea"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="20dp">
+
+                <ImageButton
+                    android:id="@+id/iv_1000_point"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:backgroundTint="#f4f0ea"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/shop_icon1"
+                    tools:srcCompat="@drawable/shop_icon1" />
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:layout_marginLeft="30dp"
+                android:layout_marginTop="50dp"
+                android:layout_marginRight="30dp"
+                app:cardBackgroundColor="#f4f0ea"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="20dp">
+
+                <ImageButton
+                    android:id="@+id/iv_3000_point"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:backgroundTint="#f4f0ea"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/shop_icon2"
+                    tools:srcCompat="@drawable/shop_icon2" />
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:layout_marginLeft="30dp"
+                android:layout_marginTop="50dp"
+                android:layout_marginRight="30dp"
+                app:cardBackgroundColor="#f4f0ea"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="20dp">
+
+                <ImageButton
+                    android:id="@+id/iv_5000_point"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:backgroundTint="#f4f0ea"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/shop_icon3"
+                    tools:srcCompat="@drawable/shop_icon3" />
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:layout_marginLeft="30dp"
+                android:layout_marginTop="50dp"
+                android:layout_marginRight="30dp"
+                android:backgroundTint="#f4f0ea"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="20dp">
+
+                <ImageButton
+                    android:id="@+id/iv_10000_point"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:backgroundTint="#f4f0ea"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/shop_icon4"
+                    tools:srcCompat="@drawable/shop_icon4" />
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:layout_marginLeft="30dp"
+                android:layout_marginTop="50dp"
+                android:layout_marginRight="30dp"
+                android:backgroundTint="#f4f0ea"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="20dp">
+
+                <ImageButton
+                    android:id="@+id/iv_50000_point"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:backgroundTint="#f4f0ea"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/shop_icon5"
+                    tools:srcCompat="@drawable/shop_icon5" />
+            </androidx.cardview.widget.CardView>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
