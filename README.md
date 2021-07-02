@@ -14,4 +14,5 @@ Android 잠금화면 기능을 이용한 퀴즈 리워드 어플리케이션입�
 ## 기능
 
 완료보고서 문서 링크
-[https://github.com/DongJooKim1541/AndroidProjects_-Graduation_project/blob/main/B03_%EC%BD%94%EB%94%A9%EC%A4%91%EB%8F%85.docx](https://github.com/DongJooKim1541/AndroidProjects_-Graduation_project/blob/main/B03_%EC%BD%94%EB%94%A9%EC%A4%91%EB%8F%85.docx)
+[https://github.com/DongJooKim1541/AndroidProjects_-Graduation_project/blob/main/B03_%EC%BD%94%EB%94%A9%EC%A4%91%EB%8F%85.docx]
+(https://github.com/DongJooKim1541/AndroidProjects_-Graduation_project/blob/main/B03_%EC%BD%94%EB%94%A9%EC%A4%91%EB%8F%85.docx)
