@@ -6,10 +6,11 @@
 Android 잠금화면 기능을 이용한 퀴즈 리워드 어플리케이션입니다.
 
 ## 활용 기술
-- JAVA
-- MVVM 패턴
-- Firebase
-
+```
+JAVA
+MVVM pattern
+Firebase
+```
 
 ## 기능
 
