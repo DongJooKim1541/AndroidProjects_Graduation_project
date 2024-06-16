@@ -1,4 +1,4 @@
-# AndroidProjects_-Graduation_project
+# AndroidProjects-Graduation_project
 
 <img src = "./ScreenShots/icon.png" width="20%">  
 가천대학교 졸업 프로젝트
