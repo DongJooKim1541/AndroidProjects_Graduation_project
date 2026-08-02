@@ -1,4 +1,4 @@
-# 코딩중독 - 잠금화면 기반 퀴즈 리워드 어플리케이션
+# 잠금화면 기반 퀴즈 리워드 어플리케이션
 
 <img src="app/src/main/ic_main-playstore.png" width="20%">
 
@@ -6,7 +6,8 @@
 
 ## 개요
 
-'코딩중독'은 안드로이드 잠금화면 기능을 활용하여 사용자가 휴대폰을 잠금 해제할 때마다 퀴즈를 풀 수 있는 재미있고 교육적인 애플리케이션입니다. 퀴즈에 정답하면 포인트를 얻을 수 있으며, 이를 통해 게임화된 학습 경험을 제공합니다.
+안드로이드 잠금화면 기능을 활용하여 사용자가 휴대폰을 잠금 해제할 때마다 퀴즈를 풀 수 있는 재미있고 교육적인 애플리케이션입니다. 
+퀴즈에 정답하면 포인트를 얻을 수 있으며, 이를 통해 게임화된 학습 경험을 제공합니다.
 
 ## 주요 기능
 
@@ -277,7 +278,7 @@ images/
 ## 성과
 
 ### 학술 발표
-- **2024학년도 가천대학교 졸업프로젝트 발표** — "코딩중독: 잠금화면 기반 퀴즈 리워드 시스템"
+- **2020학년도 가천대학교 졸업프로젝트 발표** — "잠금화면 기반 퀴즈 리워드 시스템"
 
 ## 저자
 
@@ -289,19 +290,3 @@ images/
 ## 라이센스
 
 이 프로젝트는 [LICENSE](LICENSE) 파일을 참고하세요.
-
-## 기여 방법
-
-이 프로젝트에 기여하고 싶으시다면:
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 감사의 말
-
-- 가천대학교 교수진 및 학과 동료들
-- Firebase 커뮤니티
-- Android 개발 커뮤니티
