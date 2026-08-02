@@ -8,9 +8,6 @@
 .externalNativeBuild
 .cxx
 gradle/
-gradlew
-gradlew.bat
-gradle.properties
 google-services.json
 *.apk
 app/release/
