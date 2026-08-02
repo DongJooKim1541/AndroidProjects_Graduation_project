@@ -87,43 +87,6 @@ app/
 - **[docs/B03_코딩중독.docx](docs/B03_코딩중독.docx)** — 최종 완료 보고서
 - **[docs/B03_코딩중독.pptx](docs/B03_코딩중독.pptx)** — 발표 자료
 
-## 알려진 문제
-
-### 보안
-- ⚠️ Firebase Auth로 비밀번호 관리 변경 필요
-- ⚠️ Firebase Security Rules 작성 필요
-
-### 코드 품질
-- Callback Hell (7단계 중첩) → RxJava/Coroutine 마이그레이션 필요
-- 메모리 누수 위험 → WeakReference 적용 필요
-- 코드 중복 → 메서드 추출로 개선 필요
-
-### API
-- AsyncTask Deprecated → Handler/Executor로 변경 필요
-
-자세한 내용은 [docs/SDD.md](docs/SDD.md#8-알려진-한계-및-설계-결정)를 참고하세요.
-
-## 향후 개선 계획
-
-### 우선순위 1 (Critical - 즉시)
-- [ ] Firebase Authentication 마이그레이션
-- [ ] Callback Hell 리팩토링
-
-### 우선순위 2 (High - 1주일)
-- [ ] 코드 중복 제거
-- [ ] ViewBinding 적용
-- [ ] 메모리 누수 방지
-
-### 우선순위 3 (Medium - 2주일)
-- [x] MVVM 패턴 완성 (2026-08-02 완료)
-- [ ] 이미지 최적화 (Glide)
-- [ ] Firebase 쿼리 최적화
-
-### 우선순위 4 (Low)
-- [ ] 단위 테스트 작성
-- [ ] Firebase Security Rules 작성
-- [ ] 성능 모니터링
-
 ## 저자
 
 **Dongjoo Kim** (김동주)
