@@ -408,47 +408,95 @@ pathReference.getBytes(ONE_MEGABYTE)  // 메모리 제한 없음
 
 ---
 
-## 8. 알려진 한계 및 설계 결정
+## 8. MVVM 아키텍처 구현 완료
 
-### 8.1 AsyncTask 사용
+### 8.1 ViewModel 클래스 구현
+
+#### AuthViewModel.java
+- 사용자 인증 관련 로직 관리
+- LiveData: currentUserLiveData, errorMessageLiveData, isLoadingLiveData
+- 로그인, 회원가입, 로그아웃 기능 제공
+
+#### MainActivityViewModel.java
+- MainActivity 상태 및 네비게이션 관리
+- LiveData: currentUserEmailLiveData, currentMenuLiveData, errorMessageLiveData
+- Fragment 전환 상태 관리
+
+#### LockScreenViewModel.java
+- 퀴즈 화면 기능 관리
+- LiveData: quizQuestionLiveData, quizImageUrlLiveData, quizOptionsLiveData, userPointsLiveData 등
+- 정답 제출, 포인트 업데이트, 오답 기록
+
+#### AnswerNoteViewModel.java
+- 오답 노트 데이터 관리
+- 연도, 회차, 문제번호 필터링
+- 오답 목록 조회 및 삭제 기능
+
+#### ViewModelFactory.java
+- 의존성 주입을 통한 ViewModel 인스턴스 생성
+- 모든 ViewModel의 통일된 생성 방식 제공
+
+### 8.2 Activity 및 Fragment MVVM 리팩토링
+- MainActivity, LoginActivity, LockScreenActivity 업데이트
+- HomeFragment 및 기타 Fragment 업데이트
+- 비즈니스 로직과 UI 계층 명확한 분리
+- LiveData를 통한 단방향 데이터 흐름
+
+### 8.3 MVVM 아키텍처의 장점
+| 항목 | 개선 사항 |
+|------|---------|
+| 코드 분리 | UI 계층과 비즈니스 로직 명확히 분리 |
+| 테스트 용이성 | ViewModel을 독립적으로 테스트 가능 |
+| 라이프사이클 관리 | 자동 라이프사이클 관리로 메모리 누수 방지 |
+| 화면 회전 | 데이터 유지로 사용자 경험 개선 |
+| 유지보수 | 코드 가독성과 유지보수성 향상 |
+
+---
+
+## 9. 알려진 한계 및 설계 결정
+
+### 9.1 AsyncTask 사용
 - **이유**: 구버전 호환성
 - **문제**: API 30에서 deprecated
 - **해결**: Handler 또는 Executor로 변경
 
-### 8.2 Views 레이아웃 구성
+### 9.2 Views 레이아웃 구성
 - **현재**: findViewById() 14회 사용
 - **문제**: 타입 안전성 부족, 성능 저하
 - **해결**: ViewBinding 적용
 
-### 8.3 MVVM 선언과 구현의 불일치
-- **현재**: README에서 "MVVM"이라고 명시했으나 실제는 MVC
-- **원인**: ViewModel과 LiveData 미사용
-- **계획**: 점진적 MVVM 마이그레이션
+### 9.3 Callback Hell 리팩토링 (진행 중)
+- **문제**: LockScreenActivity.ShowProblem() 메서드가 7단계 콜백 중첩
+- **영향**: 디버깅 불가능, 메모리 누수 위험
+- **계획**: RxJava 또는 Kotlin Coroutine으로 마이그레이션
 
 ---
 
-## 9. 테스트 전략
+## 10. 테스트 전략
 
-### 9.1 단위 테스트 (Unit Test)
+### 10.1 단위 테스트 (Unit Test)
 - Firebase 쿼리 모킹
 - 포인트 계산 로직 검증
 - 오답 판정 로직 검증
+- ViewModel 로직 테스트
 
-### 9.2 통합 테스트 (Integration Test)
+### 10.2 통합 테스트 (Integration Test)
 - Firebase 실제 연동 테스트
 - 사용자 인증 플로우 테스트
 - 포인트 업데이트 end-to-end 테스트
+- LiveData 옵저버 테스트
 
-### 9.3 UI 테스트
+### 10.3 UI 테스트
 - Espresso를 이용한 UI 컴포넌트 테스트
 - 잠금화면 액티비티 테스트
 - 프래그먼트 전환 테스트
+- MVVM 아키텍처 하에서의 상태 관리 테스트
 
 ---
 
-## 10. 배포 및 유지보수
+## 11. 배포 및 유지보수
 
-### 10.1 빌드 및 배포
+### 11.1 빌드 및 배포
 ```bash
 # Debug APK 생성
 ./gradlew assembleDebug
@@ -462,7 +510,7 @@ pathReference.getBytes(ONE_MEGABYTE)  // 메모리 제한 없음
 # - Privacy Policy 준비
 ```
 
-### 10.2 버전 관리
+### 11.2 버전 관리
 ```gradle
 versionCode 1        // 현재 버전
 versionName "1.0"
@@ -470,16 +518,17 @@ minSdkVersion 26     // Android 8.0
 targetSdkVersion 29  // Android 10
 ```
 
-### 10.3 모니터링
+### 11.3 모니터링
 - Firebase Console에서 사용자 활동 모니터링
 - Crashlytics로 앱 크래시 추적
 - Google Analytics로 사용자 행동 분석
 
 ---
 
-## 참고 자료
+## 12. 참고 자료
 
 - [Android Official Documentation](https://developer.android.com/docs)
 - [Firebase Documentation](https://firebase.google.com/docs)
 - [MVVM Architecture Pattern](https://developer.android.com/jetpack/guide)
 - [Android Security Best Practices](https://developer.android.com/privacy-and-security)
+- [MVVM_REFACTORING.md](MVVM_REFACTORING.md) — MVVM 구현 상세 문서
