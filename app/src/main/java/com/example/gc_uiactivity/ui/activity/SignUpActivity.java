@@ -1,4 +1,4 @@
-package com.example.gc_uiactivity.user_state;
+﻿package com.example.gc_uiactivity.user_state;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -96,3 +96,4 @@ public class SignUpActivity extends Activity {
         });
     }
 }
+

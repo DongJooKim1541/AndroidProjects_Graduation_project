@@ -1,4 +1,4 @@
-package com.example.gc_uiactivity.answer_note;
+﻿package com.example.gc_uiactivity.ui.fragment;
 
 import android.os.Bundle;
 import android.view.KeyEvent;
@@ -13,7 +13,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.gc_uiactivity.R;
-import com.example.gc_uiactivity.home.HomeFragment;
+import com.example.gc_uiactivity.ui.fragment.HomeFragment;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
@@ -78,3 +78,5 @@ public class AnswerNoteYearFragment extends Fragment {
         return v;
     }
 }
+
+

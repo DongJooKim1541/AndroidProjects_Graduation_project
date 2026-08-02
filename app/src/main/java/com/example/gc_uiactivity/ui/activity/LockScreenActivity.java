@@ -1,4 +1,4 @@
-package com.example.gc_uiactivity.lock_screen;
+﻿package com.example.gc_uiactivity.lock_screen;
 
 import android.app.Activity;
 import android.app.ProgressDialog;

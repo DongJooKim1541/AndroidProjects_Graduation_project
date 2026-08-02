@@ -1,4 +1,4 @@
-package com.example.gc_uiactivity.options;
+﻿package com.example.gc_uiactivity.ui.fragment;
 
 import android.os.Bundle;
 import android.view.KeyEvent;
@@ -13,7 +13,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.gc_uiactivity.R;
-import com.example.gc_uiactivity.home.HomeFragment;
+import com.example.gc_uiactivity.ui.fragment.HomeFragment;
 
 import java.util.ArrayList;
 
@@ -89,3 +89,4 @@ public class OptionFragment  extends Fragment {
         return v;
     }
 }
+

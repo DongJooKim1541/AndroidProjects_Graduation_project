@@ -1,4 +1,4 @@
-package com.example.gc_uiactivity.user_state;
+﻿package com.example.gc_uiactivity.user_state;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -125,3 +125,4 @@ public class LoginActivity extends Activity {
         }
     }
 }
+

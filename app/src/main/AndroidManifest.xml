@@ -10,20 +10,20 @@
 
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity">
+        <activity android:name=".ui.activity.MainActivity">
         </activity>
         <receiver android:name=".lock_screen.ScreenReceiver"></receiver>
         <service
             android:name=".lock_screen.ScreenService"
             android:enabled="true"
             android:exported="true"></service>
-        <activity android:name=".lock_screen.LockScreenActivity"></activity>
-        <activity android:name=".user_state.LoginActivity"></activity>
-        <activity android:name=".user_state.SignUpActivity"></activity>
+        <activity android:name=".ui.activity.LockScreenActivity"></activity>
+        <activity android:name=".ui.activity.LoginActivity"></activity>
+        <activity android:name=".ui.activity.SignUpActivity"></activity>
         <service android:name=".lock_screen.ShowForegroundService"/>
 
         <activity
-            android:name=".SplashActivity"
+            android:name=".ui.activity.SplashActivity"
             android:screenOrientation="portrait"
             android:theme="@android:style/Theme.NoTitleBar">
         <intent-filter>

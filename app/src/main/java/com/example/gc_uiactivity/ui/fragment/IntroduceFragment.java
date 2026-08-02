@@ -1,4 +1,4 @@
-package com.example.gc_uiactivity.home;
+﻿package com.example.gc_uiactivity.ui.fragment;
 
 import android.os.Bundle;
 import android.view.KeyEvent;
@@ -42,3 +42,5 @@ public class IntroduceFragment extends Fragment {
         return v;
     }
 }
+
+

@@ -1,4 +1,4 @@
-package com.example.gc_uiactivity.home;
+﻿package com.example.gc_uiactivity.ui.fragment;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
@@ -18,7 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import com.example.gc_uiactivity.user_state.LoginActivity;
+import com.example.gc_uiactivity.ui.activity.LoginActivity;
 import com.example.gc_uiactivity.R;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -325,3 +325,5 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
         currMembers.child("Email").setValue(null);
     }
 }
+
+
