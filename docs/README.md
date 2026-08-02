@@ -1,8 +1,6 @@
-# 코딩중독 (Coding Addiction) - 문서 네비게이션
+# 문서 네비게이션
 
-**프로젝트**: 잠금화면 기반 퀴즈 리워드 애플리케이션 (MVVM 완전 구현)
-**상태**: 완성됨 (2026-08-02)
-**최후 업데이트**: 2026-08-02
+**프로젝트**: 잠금화면 기반 퀴즈 리워드 애플리케이션
 
 ---
 
@@ -43,15 +41,6 @@
 
 **배포 전 최종 체크리스트 포함**
 
-### 4. [MVVM_REFACTORING.md](MVVM_REFACTORING.md) - MVVM 리팩토링 문서
-MVVM 아키텍처 구현 상세 가이드입니다.
-
-**포함 내용:**
-- **ViewModel 클래스**: AuthViewModel, MainActivityViewModel, LockScreenViewModel, AnswerNoteViewModel
-- **Activity & Fragment 업데이트**: MVVM 패턴 적용
-- **LiveData 패턴**: 단방향 데이터 흐름
-- **이점 및 이주 체크리스트**
-- **마이그레이션 계획**: 다음 단계 (Repository 패턴, Dependency Injection, 유닛 테스트)
 
 ---
 
@@ -159,8 +148,8 @@ Run > Run 'app'
 - [MVVM Architecture Pattern](https://developer.android.com/jetpack/guide)
 
 ### 프로젝트 완료 자료
-- **[B03_코딩중독.docx](B03_코딩중독.docx)** - 졸업 프로젝트 최종 보고서
-- **[B03_코딩중독.pptx](B03_코딩중독.pptx)** - 발표 자료 및 시연 자료
+- **[B03_코딩중독.docx](B03_코딩중독.docx)** - 최종 완료 보고서
+- **[B03_코딩중독.pptx](B03_코딩중독.pptx)** - 발표 자료
 
 ---
 
@@ -177,7 +166,3 @@ Run > Run 'app'
 
 [LICENSE](../LICENSE) 파일을 참고하세요.
 
----
-
-**마지막 업데이트**: 2026-08-02
-**상태**: 완성 (MVVM 완전 구현, 문서화 완료)

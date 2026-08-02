@@ -1,8 +1,8 @@
-# 코딩중독 - 잠금화면 기반 퀴즈 리워드 어플리케이션
+# 잠금화면 기반 퀴즈 리워드 어플리케이션
 
 <img src="app/src/main/ic_main-playstore.png" width="20%">
 
-**가천대학교 졸업 프로젝트 (2020) | MVVM 완전 구현 (2026-08-02)**
+**가천대학교 졸업 프로젝트**
 
 ## 개요
 
@@ -148,7 +148,3 @@ app/
 | Auth | Firebase Authentication |
 | Architecture | MVVM (완료) |
 
----
-
-**프로젝트 생성**: 2020
-**최종 업데이트**: 2026-08-02
