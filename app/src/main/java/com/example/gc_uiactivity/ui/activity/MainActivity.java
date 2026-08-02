@@ -1,4 +1,4 @@
-﻿package com.example.gc_uiactivity.ui.activity;
+package com.example.gc_uiactivity.ui.activity;
 
 import android.os.Bundle;
 import android.view.Menu;
@@ -13,151 +13,84 @@ import com.example.gc_uiactivity.ui.fragment.AnswerNoteYearFragment;
 import com.example.gc_uiactivity.ui.fragment.CashFragment;
 import com.example.gc_uiactivity.ui.fragment.HomeFragment;
 import com.example.gc_uiactivity.ui.fragment.OptionFragment;
+import com.example.gc_uiactivity.firebase.DatabaseManager;
 import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 
-public class MainActivity extends AppCompatActivity{
+public class MainActivity extends AppCompatActivity {
 
     HomeFragment homeFragment;
-    //LockFragment lockFragment;
     OptionFragment optionFragment;
     AnswerNoteYearFragment answerNoteYearFragment;
     CashFragment cashFragment;
+
+    // Firebase 매니저 인스턴스
+    private DatabaseManager databaseManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //액션바컨트롤
+        // 매니저 초기화
+        databaseManager = new DatabaseManager();
+
+        // 액션바 컨트롤
         ActionBar ab = getSupportActionBar();
         ab.setIcon(R.drawable.logo_image);
         ab.setDisplayUseLogoEnabled(true);
         ab.setDisplayShowHomeEnabled(true);
         ab.setDisplayShowTitleEnabled(false);
 
-        homeFragment=new HomeFragment();
-        //lockFragment=new LockFragment();
-        optionFragment=new OptionFragment();
-        answerNoteYearFragment=new AnswerNoteYearFragment();
-        cashFragment=new CashFragment();
-        getSupportFragmentManager().beginTransaction().replace(R.id.main_frame,homeFragment).commit();
+        homeFragment = new HomeFragment();
+        optionFragment = new OptionFragment();
+        answerNoteYearFragment = new AnswerNoteYearFragment();
+        cashFragment = new CashFragment();
+        getSupportFragmentManager().beginTransaction().replace(R.id.main_frame, homeFragment).commit();
     }
 
-
-
-
-    //액션바 생성
+    // 액션바 생성
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.actionbar_actions, menu);
         return true;
     }
 
-    //액션바 리스너
+    // 액션바 리스너
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        FirebaseDatabase firebaseDatabase=FirebaseDatabase.getInstance();
-
-        //저장시킬 노드 탐조객체 가져오기
-        final DatabaseReference rootRef=firebaseDatabase.getReference();//()안에 아무것도 안쓰면 최상위 노드
-
-        DatabaseReference currRef=rootRef.child("현재 상태");
-        DatabaseReference currMembers=currRef.child("계정 정보");
-
         switch (item.getItemId()) {
             case R.id.action_home:
-                getSupportFragmentManager().beginTransaction().replace(R.id.main_frame,homeFragment).commit();
+                getSupportFragmentManager().beginTransaction().replace(R.id.main_frame, homeFragment).commit();
                 return true;
             case R.id.action_option:
-                currMembers.addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                        String email=(String)dataSnapshot.child("Email").getValue();
-                        if(email!=null){
-                            String eDataStr=email.replaceAll("[.]","");
-
-                            DatabaseReference memberRef=rootRef.child("계정 정보");
-
-                            DatabaseReference members=memberRef.child(eDataStr);
-
-                            members.child("ChoiceProblem");
-
-                            getSupportFragmentManager().beginTransaction().replace(R.id.main_frame,optionFragment).commit();
-                        }
-                        else{
-                            Toast.makeText(MainActivity.this,"로그인을 해주시기 바랍니다.",Toast.LENGTH_SHORT).show();
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                    }
-                });
+                handleFragmentNavigation(optionFragment, "옵션");
                 return true;
             case R.id.action_study:
-                currMembers.addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                        String email=(String)dataSnapshot.child("Email").getValue();
-                        if(email!=null){
-                            String eDataStr=email.replaceAll("[.]","");
-
-                            DatabaseReference memberRef=rootRef.child("계정 정보");
-
-                            DatabaseReference members=memberRef.child(eDataStr);
-
-                            members.child("ChoiceProblem");
-
-                            getSupportFragmentManager().beginTransaction().replace(R.id.main_frame,answerNoteYearFragment).commit();
-                        }
-                        else{
-                            Toast.makeText(MainActivity.this,"로그인을 해주시기 바랍니다.",Toast.LENGTH_SHORT).show();
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                    }
-                });
+                handleFragmentNavigation(answerNoteYearFragment, "학습");
                 return true;
             case R.id.action_cash:
-                currMembers.addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                        String email=(String)dataSnapshot.child("Email").getValue();
-                        if(email!=null){
-                            String eDataStr=email.replaceAll("[.]","");
-
-                            DatabaseReference memberRef=rootRef.child("계정 정보");
-
-                            DatabaseReference members=memberRef.child(eDataStr);
-
-                            members.child("ChoiceProblem");
-
-                            getSupportFragmentManager().beginTransaction().replace(R.id.main_frame,cashFragment).commit();
-                        }
-                        else{
-                            Toast.makeText(MainActivity.this,"로그인을 해주시기 바랍니다.",Toast.LENGTH_SHORT).show();
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                    }
-                });
-
+                handleFragmentNavigation(cashFragment, "캐시");
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
+    /**
+     * 프래그먼트 네비게이션 처리 (중복 코드 제거)
+     */
+    private void handleFragmentNavigation(final android.app.Fragment targetFragment, String menuName) {
+        databaseManager.getCurrentUserEmail(new DatabaseManager.EmailCallback() {
+            @Override
+            public void onEmailReceived(String email) {
+                if (email != null) {
+                    String eDataStr = email.replaceAll("[.]", "");
+                    // 사용자 정보 확인 (선택적)
+                    getSupportFragmentManager().beginTransaction().replace(R.id.main_frame, (androidx.fragment.app.Fragment) targetFragment).commit();
+                } else {
+                    Toast.makeText(MainActivity.this, "로그인을 해주시기 바랍니다.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
 }
-

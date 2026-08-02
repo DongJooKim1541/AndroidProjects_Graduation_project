@@ -1,4 +1,4 @@
-﻿package com.example.gc_uiactivity.lock_screen;
+package com.example.gc_uiactivity.lock_screen;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -20,6 +20,9 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 
 import com.example.gc_uiactivity.R;
+import com.example.gc_uiactivity.firebase.DatabaseManager;
+import com.example.gc_uiactivity.firebase.PointManager;
+import com.example.gc_uiactivity.firebase.WrongAnswerManager;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DataSnapshot;
@@ -44,41 +47,50 @@ public class LockScreenActivity extends Activity {
     RadioButton rb_answer4;
 
     TextView tv_result;
-    Random random=new Random();
+    Random random = new Random();
 
     private ScaleGestureDetector mScaleGestureDetector;
     private float mScaleFactor = 1.0f;
 
+    // Firebase 매니저 인스턴스
+    private DatabaseManager databaseManager;
+    private PointManager pointManager;
+    private WrongAnswerManager wrongAnswerManager;
+
     @Override
-    protected void onCreate(Bundle savedInstanceState){
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lock_screen);
 
-        tv_problem=findViewById(R.id.tv_problem);
+        // 매니저 초기화
+        databaseManager = new DatabaseManager();
+        pointManager = new PointManager();
+        wrongAnswerManager = new WrongAnswerManager();
 
-        iv_problem_image=findViewById(R.id.problem_image);
+        tv_problem = findViewById(R.id.tv_problem);
+
+        iv_problem_image = findViewById(R.id.problem_image);
         mScaleGestureDetector = new ScaleGestureDetector(this, new ScaleListener());
 
-        rb_answer1=findViewById(R.id.rb_answer1);
-        rb_answer2=findViewById(R.id.rb_answer2);
-        rb_answer3=findViewById(R.id.rb_answer3);
-        rb_answer4=findViewById(R.id.rb_answer4);
+        rb_answer1 = findViewById(R.id.rb_answer1);
+        rb_answer2 = findViewById(R.id.rb_answer2);
+        rb_answer3 = findViewById(R.id.rb_answer3);
+        rb_answer4 = findViewById(R.id.rb_answer4);
 
         rb_answer1.setOnClickListener(radioButtonClickListener);
         rb_answer2.setOnClickListener(radioButtonClickListener);
         rb_answer3.setOnClickListener(radioButtonClickListener);
         rb_answer4.setOnClickListener(radioButtonClickListener);
 
-        rg_answer=findViewById(R.id.rg_answer);
+        rg_answer = findViewById(R.id.rg_answer);
 
-        tv_result=findViewById(R.id.tv_result);
+        tv_result = findViewById(R.id.tv_result);
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
 
-        CheckTypesTask checkTypesTask=new CheckTypesTask();
+        CheckTypesTask checkTypesTask = new CheckTypesTask();
         checkTypesTask.execute();
         ShowProblem();
-
     }
 
     @Override
@@ -87,44 +99,37 @@ public class LockScreenActivity extends Activity {
         return true;
     }
 
-    private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener{
+    private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
         @Override
         public boolean onScale(ScaleGestureDetector detector) {
-            // ScaleGestureDetector에서 factor를 받아 변수로 선언한 factor에 넣고
             mScaleFactor *= mScaleGestureDetector.getScaleFactor();
-
-            // 최대 10배, 최소 10배 줌 한계 설정
             mScaleFactor = Math.max(1.0f, Math.min(mScaleFactor, 2.0f));
 
-            // 이미지뷰 스케일에 적용
             iv_problem_image.setScaleX(mScaleFactor);
-            iv_problem_image.setScaleY(mScaleFactor*1.1f);
+            iv_problem_image.setScaleY(mScaleFactor * 1.1f);
             return true;
         }
     }
 
-    private class CheckTypesTask extends AsyncTask<Void,Void,Void> {
+    private class CheckTypesTask extends AsyncTask<Void, Void, Void> {
 
-        ProgressDialog progressDialog=new ProgressDialog(LockScreenActivity.this);
+        ProgressDialog progressDialog = new ProgressDialog(LockScreenActivity.this);
 
         @Override
         protected void onPreExecute() {
             progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
             progressDialog.setMessage("로딩중...");
-            //show dialog
             progressDialog.show();
             super.onPreExecute();
         }
 
         @Override
         protected Void doInBackground(Void... arg0) {
-            try{
-                for(int i=0;i<5;i++){
-                    //progressDialog.setProgress(i*30);
+            try {
+                for (int i = 0; i < 5; i++) {
                     Thread.sleep(500);
                 }
-            }
-            catch(InterruptedException e){
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
             return null;
@@ -137,388 +142,190 @@ public class LockScreenActivity extends Activity {
         }
     }
 
-
-    RadioButton.OnClickListener radioButtonClickListener=new android.widget.RadioButton.OnClickListener(){
+    RadioButton.OnClickListener radioButtonClickListener = new android.widget.RadioButton.OnClickListener() {
         @Override
         public void onClick(View v) {
 
         }
     };
 
-    public void ShowProblem(){
+    public void ShowProblem() {
+        // 현재 사용자의 이메일 조회
+        databaseManager.getCurrentUserEmail(new DatabaseManager.EmailCallback() {
+            @Override
+            public void onEmailReceived(String email) {
+                if (email != null) {
+                    final String eDataStr = email;
+                    loadProblemData(eDataStr);
+                } else {
+                    Toast.makeText(LockScreenActivity.this, "사용자 정보를 가져올 수 없습니다.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
 
-        //파이어베이스 실시간 dB관리 객체 열어오기.
-        FirebaseDatabase firebaseDatabase=FirebaseDatabase.getInstance();
-        final DatabaseReference rootRef=firebaseDatabase.getReference();//()안에 아무것도 안쓰면 최상위 노드
-        DatabaseReference currRef=rootRef.child("현재 상태");
-        DatabaseReference currMembers=currRef.child("계정 정보");
+    /**
+     * 문제 데이터 로드
+     */
+    private void loadProblemData(final String email) {
+        databaseManager.getUserInfo(email, new DatabaseManager.UserInfoCallback() {
+            @Override
+            public void onUserInfoReceived(DataSnapshot dataSnapshot) {
+                if (dataSnapshot != null && dataSnapshot.child("ChoiceProblem").getValue() != null) {
+                    if (dataSnapshot.child("problem_to_Korean").getValue() != null) {
+                        final String problem = dataSnapshot.child("ChoiceProblem").getValue().toString();
+                        final String problem_to_korean = dataSnapshot.child("problem_to_Korean").getValue().toString();
 
-        currMembers.addListenerForSingleValueEvent(new ValueEventListener() {
+                        Log.d("KDJ", "problem:" + problem);
+                        loadProblemYears(email, problem, problem_to_korean);
+                    }
+                } else {
+                    Toast.makeText(LockScreenActivity.this, "문제 설정을 하지 않음.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    /**
+     * 문제 연도 로드
+     */
+    private void loadProblemYears(final String email, final String problem, final String problem_to_korean) {
+        databaseManager.getProblemYears(problem, new DatabaseManager.QuizCallback() {
+            @Override
+            public void onQuizzesReceived(DataSnapshot dataSnapshot) {
+                if (dataSnapshot != null && dataSnapshot.getChildrenCount() > 0) {
+                    final String randYear = Integer.toString(random.nextInt((int) (dataSnapshot.getChildrenCount())) + 2018);
+                    Log.d("KDJ", "randYear: " + randYear);
+                    loadProblemEpisode(email, problem, problem_to_korean, randYear);
+                }
+            }
+        });
+    }
+
+    /**
+     * 문제 회차 로드
+     */
+    private void loadProblemEpisode(final String email, final String problem, final String problem_to_korean, final String year) {
+        FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
+        DatabaseReference rootRef = firebaseDatabase.getReference();
+        DatabaseReference problemRef = rootRef.child("문제 종류");
+        final DatabaseReference problemYear = problemRef.child(problem).child("Year").child(year);
+
+        problemYear.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                final String eDataStr=dataSnapshot.child("Email").getValue().toString();
-                final DatabaseReference memberRef=rootRef.child("계정 정보").child(eDataStr);
-
-
-                memberRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        if(dataSnapshot.child("ChoiceProblem").getValue()!=null){
-
-                            if(dataSnapshot.child("ChoiceProblem").getValue()!=null && dataSnapshot.child("problem_to_Korean").getValue()!=null){
-
-                                final String problem=dataSnapshot.child("ChoiceProblem").getValue().toString();
-                                final String problem_to_korean=dataSnapshot.child("problem_to_Korean").getValue().toString();
-
-                                Log.d("KDJ", "problem:" + problem);
-                                final DatabaseReference problemRef=rootRef.child("문제 종류");
-                                //아래 pathReference와 child.child가 같아야함
-                                final DatabaseReference problems=problemRef.child(problem).child("Year");
-
-                                problems.addListenerForSingleValueEvent(new ValueEventListener() {
-                                    @Override
-                                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                                        if(dataSnapshot.getChildrenCount()>0){
-                                            //2018년, 2019년
-                                            final String randYear=Integer.toString(random.nextInt((int)(dataSnapshot.getChildrenCount()))+2018);
-
-                                            final DatabaseReference problemYear= problems.child(randYear);
-                                            Log.d("KDJ", "Episode 개수: " + dataSnapshot.getChildrenCount());
-                                            Log.d("KDJ", "randYear: " + randYear);
-                                            Log.d("KDJ", "problemYear: " + problemYear);
-
-                                            problemYear.addListenerForSingleValueEvent(new ValueEventListener() {
-                                                @Override
-                                                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                                                    //지금 2회차, 3회차만 있어서 +2해놓은상태
-                                                    if(dataSnapshot.getChildrenCount()>0){
-                                                        //1회, 2회, 3회
-                                                        final String randEpisode=Integer.toString(random.nextInt((int)(dataSnapshot.getChildrenCount()))+1);
-                                                        //회차 정하기
-                                                        DatabaseReference problemEpisode= problemYear.child(randEpisode);
-
-                                                        Log.d("KDJ", "Episode 개수: " + dataSnapshot.getChildrenCount());
-                                                        Log.d("KDJ", "randEpisode: " + randEpisode);
-                                                        Log.d("KDJ", "problemEpisode: " + problemEpisode);
-
-                                                        problemEpisode.addListenerForSingleValueEvent(new ValueEventListener() {
-                                                            @Override
-                                                            public void onDataChange(DataSnapshot dataSnapshot) {
-
-                                                                FirebaseStorage storage = FirebaseStorage.getInstance();
-                                                                StorageReference storageRef = storage.getReferenceFromUrl("gs://charged-dialect-285301.appspot.com/");
-
-                                                                //이걸 랜덤으로 돌려야함
-                                                                Log.d("KDJ", "randImagePath_dataSnapshot.getChildrenCount(): " + dataSnapshot.getChildrenCount());
-
-                                                                String randImagePath=Integer.toString(random.nextInt((int)(dataSnapshot.getChildrenCount()))+1);
-
-                                                                StorageReference pathReference = storageRef.child("images/"+problem+"/"+randYear+"/"+randEpisode+"/"+randImagePath+".jpeg");
-
-                                                                Log.d("KDJ", "pathReference: " + "images/"+problem+"/"+randYear+"/"+randEpisode+"/"+randImagePath+".jpeg");
-
-                                                                tv_problem.setText(problem_to_korean+" "+randYear+"년 "+randEpisode+"회 "+randImagePath+"번");
-
-                                                                Log.d("KDJ", "pathReference: " + pathReference);
-                                                                Log.d("KDJ", "problems: " + problems);
-
-                                                                final long ONE_MEGABYTE = 1024 * 1024;
-                                                                pathReference.getBytes(ONE_MEGABYTE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
-                                                                    @Override
-                                                                    public void onSuccess(byte[] bytes) {
-                                                                        // Data for "images/island.jpg" is returns, use this as needed
-                                                                        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                                                                        iv_problem_image.setImageBitmap(bitmap);
-                                                                    }
-                                                                }).addOnFailureListener(new OnFailureListener() {
-                                                                    @Override
-                                                                    public void onFailure(@NonNull Exception exception) {
-                                                                        // Handle any errors
-                                                                        Toast.makeText(getApplicationContext(), "다운로드 실패.", Toast.LENGTH_SHORT).show();
-                                                                        ShowProblem();
-                                                                    }
-                                                                });
-
-
-                                                                Log.d("KDJ", "get_problem_random_dataSnapshot.getChildrenCount(): " + dataSnapshot.getChildrenCount());
-                                                                final String get_problem_random=randImagePath;
-                                                                if(dataSnapshot.child(get_problem_random).getValue()!=null){
-
-                                                                    final String rightAnswer=dataSnapshot.child(get_problem_random).getValue().toString();
-
-                                                                    final String finalRightAnswer = rightAnswer;
-                                                                    android.util.Log.d("KDJ","finalRightAnswer: "+finalRightAnswer);
-
-                                                                    final DatabaseReference memberPointRef=rootRef.child("계정 정보").child(eDataStr).child("Points");
-                                                                    rg_answer.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
-                                                                        @Override
-                                                                        public void onCheckedChanged(RadioGroup group, int checkedId) {
-                                                                            //1번
-                                                                            if(checkedId==R.id.rb_answer1){
-                                                                                String choice="1";
-                                                                                if(finalRightAnswer.equals(choice)){
-                                                                                    tv_result.setText("정답입니다");
-                                                                                    //조건이 참인 경우에만 점수 상승
-                                                                                    memberPointRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                                                                                        @Override
-                                                                                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                                                                                            memberPointRef.setValue(Integer.toString(Integer.parseInt(dataSnapshot.getValue().toString())+1000));
-                                                                                        }
-
-                                                                                        @Override
-                                                                                        public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                                                                        }
-                                                                                    });
-                                                                                    finish();
-                                                                                }
-                                                                                else{
-                                                                                    memberRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                                                                                        @Override
-                                                                                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                                                                                            if(dataSnapshot.child("오답 목록").child(problem).child("오답 개수").getValue()==null){
-                                                                                                memberRef.child("오답 목록").child(problem).child("오답 개수").setValue("0");
-                                                                                            }
-
-                                                                                            String inCorrectAnswerNum=dataSnapshot.child("오답 목록").child(problem).child("오답 개수").getValue().toString();
-                                                                                            android.util.Log.d("KDJ","inCorrectAnswerNum: "+inCorrectAnswerNum);
-                                                                                            boolean isExist=false;
-                                                                                            for(int i=0;i<Integer.parseInt(inCorrectAnswerNum);i++){
-                                                                                                if(dataSnapshot.child("오답 목록").child(problem).child(Integer.toString(i)).getValue().toString().equals(randYear+"_"+randEpisode+"_"+get_problem_random+"_"+rightAnswer)){
-                                                                                                    isExist=true;
-                                                                                                }
-                                                                                            }
-                                                                                            if(isExist==false){
-                                                                                                memberRef.child("오답 목록").child(problem).child("오답 개수").setValue(Integer.toString(Integer.parseInt(dataSnapshot.child("오답 목록").child(problem).child("오답 개수").getValue().toString())+1));
-                                                                                                memberRef.child("오답 목록").child(problem).child(inCorrectAnswerNum).setValue(randYear+"_"+randEpisode+"_"+get_problem_random+"_"+rightAnswer);
-                                                                                            }
-                                                                                            else{
-
-                                                                                            }
-                                                                                        }
-
-                                                                                        @Override
-                                                                                        public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                                                                        }
-                                                                                    });
-                                                                                    Toast.makeText(getApplicationContext(), "오답입니다.", Toast.LENGTH_SHORT).show();
-                                                                                    finish();
-                                                                                }
-                                                                            }
-                                                                            //2번
-                                                                            else if(checkedId==R.id.rb_answer2){
-                                                                                String choice="2";
-                                                                                if(finalRightAnswer.equals(choice)){
-                                                                                    tv_result.setText("정답입니다");
-                                                                                    //조건이 참인 경우에만 점수 상승
-                                                                                    memberPointRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                                                                                        @Override
-                                                                                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                                                                                            memberPointRef.setValue(Integer.toString(Integer.parseInt(dataSnapshot.getValue().toString())+1000));
-                                                                                        }
-
-                                                                                        @Override
-                                                                                        public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                                                                        }
-                                                                                    });
-                                                                                    finish();
-                                                                                }
-                                                                                else{
-                                                                                    memberRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                                                                                        @Override
-                                                                                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                                                                                            if(dataSnapshot.child("오답 목록").child(problem).child("오답 개수").getValue()==null) {
-                                                                                                memberRef.child("오답 목록").child(problem).child("오답 개수").setValue("0");
-                                                                                            }
-
-                                                                                            String inCorrectAnswerNum=dataSnapshot.child("오답 목록").child(problem).child("오답 개수").getValue().toString();
-                                                                                            android.util.Log.d("KDJ","inCorrectAnswerNum: "+inCorrectAnswerNum);
-                                                                                            boolean isExist=false;
-                                                                                            for(int i=0;i<Integer.parseInt(inCorrectAnswerNum);i++){
-                                                                                                if(dataSnapshot.child("오답 목록").child(problem).child(Integer.toString(i)).getValue().toString().equals(randYear+"_"+randEpisode+"_"+get_problem_random+"_"+rightAnswer)){
-                                                                                                    isExist=true;
-                                                                                                }
-                                                                                            }
-                                                                                            if(isExist==false){
-                                                                                                memberRef.child("오답 목록").child(problem).child("오답 개수").setValue(Integer.toString(Integer.parseInt(dataSnapshot.child("오답 목록").child(problem).child("오답 개수").getValue().toString())+1));
-                                                                                                memberRef.child("오답 목록").child(problem).child(inCorrectAnswerNum).setValue(randYear+"_"+randEpisode+"_"+get_problem_random+"_"+rightAnswer);
-                                                                                            }
-                                                                                            else{
-
-                                                                                            }
-                                                                                        }
-
-                                                                                        @Override
-                                                                                        public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                                                                        }
-                                                                                    });
-                                                                                    Toast.makeText(getApplicationContext(), "오답입니다.", Toast.LENGTH_SHORT).show();
-                                                                                    finish();
-                                                                                }
-                                                                            }
-                                                                            //3번
-                                                                            else if(checkedId==R.id.rb_answer3){
-                                                                                String choice="3";
-                                                                                if(finalRightAnswer.equals(choice)){
-                                                                                    tv_result.setText("정답입니다");
-                                                                                    //조건이 참인 경우에만 점수 상승
-                                                                                    memberPointRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                                                                                        @Override
-                                                                                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                                                                                            memberPointRef.setValue(Integer.toString(Integer.parseInt(dataSnapshot.getValue().toString())+1000));
-                                                                                        }
-
-                                                                                        @Override
-                                                                                        public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                                                                        }
-                                                                                    });
-                                                                                    finish();
-                                                                                }
-                                                                                else{
-                                                                                    memberRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                                                                                        @Override
-                                                                                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                                                                                            if(dataSnapshot.child("오답 목록").child(problem).child("오답 개수").getValue()==null){
-                                                                                                memberRef.child("오답 목록").child(problem).child("오답 개수").setValue("0");
-                                                                                            }
-
-                                                                                            String inCorrectAnswerNum=dataSnapshot.child("오답 목록").child(problem).child("오답 개수").getValue().toString();
-                                                                                            android.util.Log.d("KDJ","inCorrectAnswerNum: "+inCorrectAnswerNum);
-                                                                                            boolean isExist=false;
-                                                                                            for(int i=0;i<Integer.parseInt(inCorrectAnswerNum);i++){
-                                                                                                if(dataSnapshot.child("오답 목록").child(problem).child(Integer.toString(i)).getValue().toString().equals(randYear+"_"+randEpisode+"_"+get_problem_random+"_"+rightAnswer)){
-                                                                                                    isExist=true;
-                                                                                                }
-                                                                                            }
-                                                                                            if(isExist==false){
-                                                                                                memberRef.child("오답 목록").child(problem).child("오답 개수").setValue(Integer.toString(Integer.parseInt(dataSnapshot.child("오답 목록").child(problem).child("오답 개수").getValue().toString())+1));
-                                                                                                memberRef.child("오답 목록").child(problem).child(inCorrectAnswerNum).setValue(randYear+"_"+randEpisode+"_"+get_problem_random+"_"+rightAnswer);
-                                                                                            }
-                                                                                            else{
-
-                                                                                            }
-                                                                                        }
-
-                                                                                        @Override
-                                                                                        public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                                                                        }
-                                                                                    });
-                                                                                    Toast.makeText(getApplicationContext(), "오답입니다.", Toast.LENGTH_SHORT).show();
-                                                                                    finish();
-                                                                                }
-                                                                            }
-                                                                            //4번
-                                                                            else if(checkedId==R.id.rb_answer4){
-                                                                                String choice="4";
-                                                                                if(finalRightAnswer.equals(choice)){
-                                                                                    tv_result.setText("정답입니다");
-                                                                                    //조건이 참인 경우에만 점수 상승
-                                                                                    memberPointRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                                                                                        @Override
-                                                                                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                                                                                            memberPointRef.setValue(Integer.toString(Integer.parseInt(dataSnapshot.getValue().toString())+1000));
-                                                                                        }
-
-                                                                                        @Override
-                                                                                        public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                                                                        }
-                                                                                    });
-                                                                                    finish();
-                                                                                }
-                                                                                else{
-                                                                                    memberRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                                                                                        @Override
-                                                                                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                                                                                            if(dataSnapshot.child("오답 목록").child(problem).child("오답 개수").getValue()==null){
-                                                                                                memberRef.child("오답 목록").child(problem).child("오답 개수").setValue("0");
-                                                                                            }
-
-                                                                                            String inCorrectAnswerNum=dataSnapshot.child("오답 목록").child(problem).child("오답 개수").getValue().toString();
-                                                                                            android.util.Log.d("KDJ","inCorrectAnswerNum: "+inCorrectAnswerNum);
-                                                                                            boolean isExist=false;
-                                                                                            for(int i=0;i<Integer.parseInt(inCorrectAnswerNum);i++){
-                                                                                                if(dataSnapshot.child("오답 목록").child(problem).child(Integer.toString(i)).getValue().toString().equals(randYear+"_"+randEpisode+"_"+get_problem_random+"_"+rightAnswer)){
-                                                                                                    isExist=true;
-                                                                                                }
-                                                                                            }
-                                                                                            if(isExist==false){
-                                                                                                memberRef.child("오답 목록").child(problem).child("오답 개수").setValue(Integer.toString(Integer.parseInt(dataSnapshot.child("오답 목록").child(problem).child("오답 개수").getValue().toString())+1));
-                                                                                                memberRef.child("오답 목록").child(problem).child(inCorrectAnswerNum).setValue(randYear+"_"+randEpisode+"_"+get_problem_random+"_"+rightAnswer);
-                                                                                            }
-                                                                                            else{
-
-                                                                                            }
-                                                                                        }
-
-                                                                                        @Override
-                                                                                        public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                                                                        }
-                                                                                    });
-                                                                                    Toast.makeText(getApplicationContext(), "오답입니다.", Toast.LENGTH_SHORT).show();
-                                                                                    finish();
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    });
-                                                                }
-                                                            }
-                                                            @Override
-                                                            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                                            }
-                                                        });
-                                                    }
-                                                }
-
-                                                @Override
-                                                public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                                }
-                                            });
-
-                                        }
-                                    }
-
-                                    @Override
-                                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                    }
-                                });
-                                //DB 구조 만들기
-                        /*for(int i=1;i<4;i++){
-                            for(int j=1;j<16;j++) {
-                                //문제 form만 만들기
-                                problems.child(Integer.toString(i)).child(Integer.toString(j)).setValue("");
-                            }
-                        }*/
-
-                            }
-                        }
-                        else{
-                            Toast.makeText(getApplicationContext(), "문제 설정을 하지 않음.", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                    }
-                });
-
+                if (dataSnapshot.getChildrenCount() > 0) {
+                    final String randEpisode = Integer.toString(random.nextInt((int) (dataSnapshot.getChildrenCount())) + 1);
+                    Log.d("KDJ", "randEpisode: " + randEpisode);
+                    loadProblemImage(email, problem, problem_to_korean, year, randEpisode);
+                }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
-
             }
         });
+    }
 
-    }//showProblem
+    /**
+     * 문제 이미지 및 정답 로드
+     */
+    private void loadProblemImage(final String email, final String problem, final String problem_to_korean, final String year, final String episode) {
+        FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
+        DatabaseReference rootRef = firebaseDatabase.getReference();
+        DatabaseReference problemRef = rootRef.child("문제 종류");
+        final DatabaseReference problemEpisode = problemRef.child(problem).child("Year").child(year).child(episode);
 
+        problemEpisode.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (dataSnapshot.getChildrenCount() > 0) {
+                    final String randImagePath = Integer.toString(random.nextInt((int) (dataSnapshot.getChildrenCount())) + 1);
+                    Log.d("KDJ", "randImagePath: " + randImagePath);
+
+                    // 파이어베이스 스토리지에서 이미지 로드
+                    loadImageFromStorage(problem, year, episode, randImagePath);
+
+                    // 정답 로드
+                    final String rightAnswer = dataSnapshot.child(randImagePath).getValue().toString();
+                    setupAnswerListener(email, problem, year, episode, randImagePath, rightAnswer, problem_to_korean);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+            }
+        });
+    }
+
+    /**
+     * 스토리지에서 이미지 로드
+     */
+    private void loadImageFromStorage(String problem, String year, String episode, String number) {
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        StorageReference storageRef = storage.getReferenceFromUrl("gs://charged-dialect-285301.appspot.com/");
+        StorageReference pathReference = storageRef.child("images/" + problem + "/" + year + "/" + episode + "/" + number + ".jpeg");
+
+        final long ONE_MEGABYTE = 1024 * 1024;
+        pathReference.getBytes(ONE_MEGABYTE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
+            @Override
+            public void onSuccess(byte[] bytes) {
+                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                iv_problem_image.setImageBitmap(bitmap);
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception exception) {
+                Toast.makeText(LockScreenActivity.this, "다운로드 실패.", Toast.LENGTH_SHORT).show();
+                ShowProblem();
+            }
+        });
+    }
+
+    /**
+     * 정답 선택 리스너 설정
+     */
+    private void setupAnswerListener(final String email, final String problem, final String year,
+                                     final String episode, final String problemNumber, final String correctAnswer,
+                                     final String problem_to_korean) {
+        tv_problem.setText(problem_to_korean + " " + year + "년 " + episode + "회 " + problemNumber + "번");
+
+        rg_answer.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                handleAnswerSelection(email, problem, year, episode, problemNumber, correctAnswer, checkedId);
+            }
+        });
+    }
+
+    /**
+     * 정답 선택 처리 (코드 중복 제거)
+     */
+    private void handleAnswerSelection(final String email, final String problem, final String year,
+                                       final String episode, final String problemNumber, final String correctAnswer, int checkedId) {
+        String selectedChoice = null;
+
+        if (checkedId == R.id.rb_answer1) {
+            selectedChoice = "1";
+        } else if (checkedId == R.id.rb_answer2) {
+            selectedChoice = "2";
+        } else if (checkedId == R.id.rb_answer3) {
+            selectedChoice = "3";
+        } else if (checkedId == R.id.rb_answer4) {
+            selectedChoice = "4";
+        }
+
+        if (selectedChoice != null && correctAnswer.equals(selectedChoice)) {
+            // 정답 처리
+            tv_result.setText("정답입니다");
+            pointManager.addPointsForCorrectAnswer(email);
+            finish();
+        } else {
+            // 오답 처리
+            String problemInfo = year + "_" + episode + "_" + problemNumber + "_" + correctAnswer;
+            wrongAnswerManager.recordWrongAnswer(email, problem, problemInfo);
+            Toast.makeText(LockScreenActivity.this, "오답입니다.", Toast.LENGTH_SHORT).show();
+            finish();
+        }
+    }
 }
