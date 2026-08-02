@@ -1,4 +1,4 @@
-package com.example.gc_uiactivity;
+﻿package com.example.gc_uiactivity.ui.activity;
 
 import android.os.Bundle;
 import android.view.Menu;
@@ -9,10 +9,10 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.gc_uiactivity.answer_note.AnswerNoteYearFragment;
-import com.example.gc_uiactivity.cash.CashFragment;
-import com.example.gc_uiactivity.home.HomeFragment;
-import com.example.gc_uiactivity.options.OptionFragment;
+import com.example.gc_uiactivity.ui.fragment.AnswerNoteYearFragment;
+import com.example.gc_uiactivity.ui.fragment.CashFragment;
+import com.example.gc_uiactivity.ui.fragment.HomeFragment;
+import com.example.gc_uiactivity.ui.fragment.OptionFragment;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -160,3 +160,4 @@ public class MainActivity extends AppCompatActivity{
     }
 
 }
+

@@ -1,4 +1,4 @@
-package com.example.gc_uiactivity.answer_note;
+﻿package com.example.gc_uiactivity.ui.adapter;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -15,13 +15,13 @@ import com.example.gc_uiactivity.R;
 
 import java.util.ArrayList;
 
-public class NumAdapter extends ArrayAdapter<String> {
+public class OptionAdapter extends ArrayAdapter<String> {
     private Context context;
     private ArrayList<String> arr;
     private ListView myList;
 
     //생성자
-    public NumAdapter(Context context, int resource, ArrayList<String> arr, ListView myList){
+    public OptionAdapter(Context context, int resource, ArrayList<String> arr, ListView myList){
         super(context,resource,arr);
 
         this.context=context;
@@ -50,3 +50,5 @@ public class NumAdapter extends ArrayAdapter<String> {
         return convertView;
     }
 }
+
+

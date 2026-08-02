@@ -11,7 +11,7 @@ import android.os.IBinder;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
-import com.example.gc_uiactivity.MainActivity;
+import com.example.gc_uiactivity.ui.activity.MainActivity;
 import com.example.gc_uiactivity.R;
 
 public class ShowForegroundService extends Service {

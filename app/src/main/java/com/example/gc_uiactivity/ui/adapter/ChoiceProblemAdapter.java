@@ -1,4 +1,4 @@
-package com.example.gc_uiactivity.options;
+﻿package com.example.gc_uiactivity.ui.adapter;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -50,3 +50,5 @@ public class ChoiceProblemAdapter extends ArrayAdapter<String> {
         return convertView;
     }
 }
+
+

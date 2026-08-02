@@ -1,4 +1,4 @@
-package com.example.gc_uiactivity.options;
+﻿package com.example.gc_uiactivity.ui.fragment;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -16,7 +16,7 @@ import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
 
 import com.example.gc_uiactivity.R;
-import com.example.gc_uiactivity.home.HomeFragment;
+import com.example.gc_uiactivity.ui.fragment.HomeFragment;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DataSnapshot;
@@ -156,3 +156,5 @@ public class ProfileImageUploadFragment extends Fragment {
         }
     }
 }
+
+

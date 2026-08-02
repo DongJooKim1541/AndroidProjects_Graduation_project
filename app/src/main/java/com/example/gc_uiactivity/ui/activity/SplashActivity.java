@@ -1,4 +1,4 @@
-package com.example.gc_uiactivity;
+﻿package com.example.gc_uiactivity.ui.activity;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -32,3 +32,4 @@ public class SplashActivity extends Activity {
         //초반 플래시 화면에서 넘어갈때 뒤로가기 버튼 못누르게 함
     }
 }
+

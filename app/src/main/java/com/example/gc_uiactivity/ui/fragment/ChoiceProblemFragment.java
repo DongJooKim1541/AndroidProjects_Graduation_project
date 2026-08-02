@@ -1,4 +1,4 @@
-package com.example.gc_uiactivity.options;
+﻿package com.example.gc_uiactivity.ui.fragment;
 
 import android.os.Bundle;
 import android.view.KeyEvent;
@@ -15,7 +15,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.gc_uiactivity.R;
-import com.example.gc_uiactivity.home.HomeFragment;
+import com.example.gc_uiactivity.ui.fragment.HomeFragment;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -145,3 +145,5 @@ public class ChoiceProblemFragment extends Fragment {
             });
         }
 };
+
+

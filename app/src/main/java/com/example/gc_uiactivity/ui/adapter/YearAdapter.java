@@ -1,4 +1,4 @@
-package com.example.gc_uiactivity.answer_note;
+﻿package com.example.gc_uiactivity.ui.adapter;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -15,13 +15,14 @@ import com.example.gc_uiactivity.R;
 
 import java.util.ArrayList;
 
-public class RoundAdapter extends ArrayAdapter<String>{
+public class YearAdapter extends ArrayAdapter<String>{
+
     private Context context;
     private ArrayList<String> arr;
     private ListView myList;
 
     //생성자
-    public RoundAdapter(Context context, int resource, ArrayList<String> arr, ListView myList){
+    public YearAdapter(Context context, int resource, ArrayList<String> arr, ListView myList){
         super(context,resource,arr);
 
         this.context=context;
@@ -38,9 +39,9 @@ public class RoundAdapter extends ArrayAdapter<String>{
         //시스템상에 있는 인플레이터를 가져다가 객체로 만드는 작업.
 
         //인플레이션 작업
-        convertView=linf.inflate(R.layout.list_form,null);
+        convertView = linf.inflate(R.layout.list_form, null);
 
-        String str=arr.get(position);
+        String str = arr.get(position);
 
         //객체 받기
         TextView txt_form = (TextView) convertView.findViewById(R.id.list_form);
@@ -50,3 +51,5 @@ public class RoundAdapter extends ArrayAdapter<String>{
         return convertView;
     }
 }
+
+
