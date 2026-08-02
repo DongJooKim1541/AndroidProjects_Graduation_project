@@ -1,4 +1,4 @@
-﻿package com.example.gc_uiactivity.user_state;
+package com.example.gc_uiactivity.ui.activity;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -10,26 +10,27 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
+import androidx.lifecycle.ViewModelProvider;
 
-import com.example.gc_uiactivity.MainActivity;
 import com.example.gc_uiactivity.R;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.AuthResult;
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.gc_uiactivity.viewmodels.AuthViewModel;
+import com.example.gc_uiactivity.viewmodels.ViewModelFactory;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 
+/**
+ * LoginActivity with MVVM architecture
+ * Handles user login and navigation to MainActivity
+ */
 public class LoginActivity extends Activity {
-    private ImageView iv_login_img;
-    private FirebaseAuth firebaseAuth;
-    private FirebaseAuth.AuthStateListener firebaseAuthListener;
+
+    private ImageView ivLoginImg;
     private EditText editTextEmail;
     private EditText editTextPassword;
     private Button buttonLogIn;
     private Button buttonSignUp;
+
+    // ViewModel
+    private AuthViewModel authViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,92 +38,101 @@ public class LoginActivity extends Activity {
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_login);
 
-        iv_login_img=findViewById(R.id.iv_login_img);
-        iv_login_img.setImageResource(R.drawable.login_lt);
-        firebaseAuth = FirebaseAuth.getInstance();
+        // Initialize ViewModel
+        authViewModel = new ViewModelProvider(this, new ViewModelFactory())
+                .get(AuthViewModel.class);
 
-        editTextEmail = (EditText) findViewById(R.id.edittext_email);
-        editTextPassword = (EditText) findViewById(R.id.edittext_password);
+        // Initialize UI components
+        initializeUI();
 
-        buttonSignUp = (Button) findViewById(R.id.btn_signup);
-        buttonSignUp.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // SignUpActivity 연결
-                Intent intent = new Intent(LoginActivity.this, SignUpActivity.class);
-                startActivity(intent);
-            }
-        });
+        // Setup click listeners
+        setupClickListeners();
 
-        buttonLogIn = (Button) findViewById(R.id.btn_login);
-        buttonLogIn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!editTextEmail.getText().toString().equals("") && !editTextPassword.getText().toString().equals("")) {
-                    loginUser(editTextEmail.getText().toString(), editTextPassword.getText().toString());
-                } else {
-                    Toast.makeText(LoginActivity.this, "계정과 비밀번호를 입력하세요.", Toast.LENGTH_LONG).show();
-                }
-            }
-        });
-
-        firebaseAuthListener = new FirebaseAuth.AuthStateListener() {
-            @Override
-            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-                FirebaseUser user = firebaseAuth.getCurrentUser();
-                if (user != null) {
-                    //로그인
-                    String email=editTextEmail.getText().toString();
-                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                    intent.putExtra("Email",email);
-                    startActivity(intent);
-
-                    //파이어베이스 실시간 dB관리 객체 열어오기.
-                    FirebaseDatabase firebaseDatabase=FirebaseDatabase.getInstance();
-
-                    //저장시킬 노드 탐조객체 가져오기
-                    final DatabaseReference rootRef=firebaseDatabase.getReference();//()안에 아무것도 안쓰면 최상위 노드
-                    DatabaseReference currRef=rootRef.child("현재 상태");
-                    DatabaseReference currMembers=currRef.child("계정 정보");
-                    String eDataStr=email.replaceAll("[.]","");
-                    currMembers.child("Email").setValue(eDataStr);
-
-                    finish();
-                } else {
-
-                }
-            }
-        };
+        // Observe ViewModel data
+        observeViewModel();
     }
 
-    public void loginUser(String email, String password) {
-        firebaseAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-            @Override
-            public void onComplete(@NonNull Task<AuthResult> task) {
-                if (task.isSuccessful()) {
-                    // 로그인 성공
-                    firebaseAuth.addAuthStateListener(firebaseAuthListener);
+    /**
+     * Initialize UI components
+     */
+    private void initializeUI() {
+        ivLoginImg = findViewById(R.id.iv_login_img);
+        ivLoginImg.setImageResource(R.drawable.login_lt);
 
-                } else {
-                    // 로그인 실패
-                    Toast.makeText(LoginActivity.this, "아이디 또는 비밀번호가 일치하지 않습니다.", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+        editTextEmail = findViewById(R.id.edittext_email);
+        editTextPassword = findViewById(R.id.edittext_password);
+
+        buttonLogIn = findViewById(R.id.btn_login);
+        buttonSignUp = findViewById(R.id.btn_signup);
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-
+    /**
+     * Setup click listeners for buttons
+     */
+    private void setupClickListeners() {
+        buttonLogIn.setOnClickListener(v -> handleLogin());
+        buttonSignUp.setOnClickListener(v -> navigateToSignUp());
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (firebaseAuthListener != null) {
-            firebaseAuth.removeAuthStateListener(firebaseAuthListener);
+    /**
+     * Handle login button click
+     */
+    private void handleLogin() {
+        String email = editTextEmail.getText().toString().trim();
+        String password = editTextPassword.getText().toString().trim();
+
+        if (email.isEmpty() || password.isEmpty()) {
+            Toast.makeText(LoginActivity.this, "계정과 비밀번호를 입력하세요.", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        authViewModel.login(email, password);
+    }
+
+    /**
+     * Navigate to SignUp Activity
+     */
+    private void navigateToSignUp() {
+        Intent intent = new Intent(LoginActivity.this, SignUpActivity.class);
+        startActivity(intent);
+    }
+
+    /**
+     * Observe ViewModel LiveData changes
+     */
+    private void observeViewModel() {
+        // Observe current user changes
+        authViewModel.getCurrentUser().observe(this, user -> {
+            if (user != null) {
+                handleLoginSuccess(user);
+            }
+        });
+
+        // Observe error messages
+        authViewModel.getErrorMessage().observe(this, error -> {
+            if (error != null && !error.isEmpty()) {
+                Toast.makeText(LoginActivity.this, error, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Observe loading state
+        authViewModel.getIsLoading().observe(this, isLoading -> {
+            // Update UI to show/hide loading indicator
+            buttonLogIn.setEnabled(!isLoading);
+            buttonSignUp.setEnabled(!isLoading);
+        });
+    }
+
+    /**
+     * Handle successful login
+     */
+    private void handleLoginSuccess(FirebaseUser user) {
+        String email = editTextEmail.getText().toString();
+
+        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+        intent.putExtra("Email", email);
+        startActivity(intent);
+
+        finish();
     }
 }
-

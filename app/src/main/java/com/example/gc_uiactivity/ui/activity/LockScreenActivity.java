@@ -1,4 +1,4 @@
-package com.example.gc_uiactivity.lock_screen;
+package com.example.gc_uiactivity.ui.activity;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -9,7 +9,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
-import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.RadioButton;
@@ -18,11 +17,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.gc_uiactivity.R;
 import com.example.gc_uiactivity.firebase.DatabaseManager;
-import com.example.gc_uiactivity.firebase.PointManager;
-import com.example.gc_uiactivity.firebase.WrongAnswerManager;
+import com.example.gc_uiactivity.viewmodels.LockScreenViewModel;
+import com.example.gc_uiactivity.viewmodels.ViewModelFactory;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DataSnapshot;
@@ -35,84 +35,108 @@ import com.google.firebase.storage.StorageReference;
 
 import java.util.Random;
 
+/**
+ * LockScreenActivity with MVVM architecture
+ * Displays quiz problems and handles user answers
+ */
 public class LockScreenActivity extends Activity {
 
-    ImageView iv_problem_image;
-    TextView tv_problem;
-
-    RadioGroup rg_answer;
-    RadioButton rb_answer1;
-    RadioButton rb_answer2;
-    RadioButton rb_answer3;
-    RadioButton rb_answer4;
-
-    TextView tv_result;
-    Random random = new Random();
+    private ImageView ivProblemImage;
+    private TextView tvProblem;
+    private RadioGroup rgAnswer;
+    private RadioButton rbAnswer1, rbAnswer2, rbAnswer3, rbAnswer4;
+    private TextView tvResult;
 
     private ScaleGestureDetector mScaleGestureDetector;
     private float mScaleFactor = 1.0f;
 
-    // Firebase 매니저 인스턴스
+    private Random random = new Random();
     private DatabaseManager databaseManager;
-    private PointManager pointManager;
-    private WrongAnswerManager wrongAnswerManager;
+
+    // ViewModel
+    private LockScreenViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lock_screen);
 
-        // 매니저 초기화
+        // Initialize ViewModel
+        viewModel = new ViewModelProvider(this, new ViewModelFactory())
+                .get(LockScreenViewModel.class);
+
+        // Initialize database manager
         databaseManager = new DatabaseManager();
-        pointManager = new PointManager();
-        wrongAnswerManager = new WrongAnswerManager();
 
-        tv_problem = findViewById(R.id.tv_problem);
+        // Initialize UI components
+        initializeUI();
 
-        iv_problem_image = findViewById(R.id.problem_image);
-        mScaleGestureDetector = new ScaleGestureDetector(this, new ScaleListener());
+        // Setup window flags
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
+                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
 
-        rb_answer1 = findViewById(R.id.rb_answer1);
-        rb_answer2 = findViewById(R.id.rb_answer2);
-        rb_answer3 = findViewById(R.id.rb_answer3);
-        rb_answer4 = findViewById(R.id.rb_answer4);
+        // Observe ViewModel data
+        observeViewModel();
 
-        rb_answer1.setOnClickListener(radioButtonClickListener);
-        rb_answer2.setOnClickListener(radioButtonClickListener);
-        rb_answer3.setOnClickListener(radioButtonClickListener);
-        rb_answer4.setOnClickListener(radioButtonClickListener);
-
-        rg_answer = findViewById(R.id.rg_answer);
-
-        tv_result = findViewById(R.id.tv_result);
-
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
-
-        CheckTypesTask checkTypesTask = new CheckTypesTask();
-        checkTypesTask.execute();
-        ShowProblem();
+        // Load initial data
+        loadInitialData();
     }
 
+    /**
+     * Initialize UI components
+     */
+    private void initializeUI() {
+        tvProblem = findViewById(R.id.tv_problem);
+        ivProblemImage = findViewById(R.id.problem_image);
+        mScaleGestureDetector = new ScaleGestureDetector(this, new ScaleListener());
+
+        rbAnswer1 = findViewById(R.id.rb_answer1);
+        rbAnswer2 = findViewById(R.id.rb_answer2);
+        rbAnswer3 = findViewById(R.id.rb_answer3);
+        rbAnswer4 = findViewById(R.id.rb_answer4);
+
+        rgAnswer = findViewById(R.id.rg_answer);
+        tvResult = findViewById(R.id.tv_result);
+
+        // Setup answer selection listener
+        rgAnswer.setOnCheckedChangeListener((group, checkedId) -> handleAnswerSelection(checkedId));
+    }
+
+    /**
+     * Handle scale gesture for image zoom
+     */
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         mScaleGestureDetector.onTouchEvent(event);
         return true;
     }
 
+    /**
+     * Scale gesture listener for image zooming
+     */
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
         @Override
         public boolean onScale(ScaleGestureDetector detector) {
             mScaleFactor *= mScaleGestureDetector.getScaleFactor();
             mScaleFactor = Math.max(1.0f, Math.min(mScaleFactor, 2.0f));
 
-            iv_problem_image.setScaleX(mScaleFactor);
-            iv_problem_image.setScaleY(mScaleFactor * 1.1f);
+            ivProblemImage.setScaleX(mScaleFactor);
+            ivProblemImage.setScaleY(mScaleFactor * 1.1f);
             return true;
         }
     }
 
-    private class CheckTypesTask extends AsyncTask<Void, Void, Void> {
+    /**
+     * Load initial quiz data with progress dialog
+     */
+    private void loadInitialData() {
+        new LoadDataTask().execute();
+    }
 
+    /**
+     * AsyncTask for loading initial data
+     */
+    private class LoadDataTask extends AsyncTask<Void, Void, Void> {
         ProgressDialog progressDialog = new ProgressDialog(LockScreenActivity.this);
 
         @Override
@@ -138,25 +162,20 @@ public class LockScreenActivity extends Activity {
         @Override
         protected void onPostExecute(Void result) {
             progressDialog.dismiss();
+            showProblem();
             super.onPostExecute(result);
         }
     }
 
-    RadioButton.OnClickListener radioButtonClickListener = new android.widget.RadioButton.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-
-        }
-    };
-
-    public void ShowProblem() {
-        // 현재 사용자의 이메일 조회
+    /**
+     * Load and display problem
+     */
+    private void showProblem() {
         databaseManager.getCurrentUserEmail(new DatabaseManager.EmailCallback() {
             @Override
             public void onEmailReceived(String email) {
                 if (email != null) {
-                    final String eDataStr = email;
-                    loadProblemData(eDataStr);
+                    loadProblemData(email);
                 } else {
                     Toast.makeText(LockScreenActivity.this, "사용자 정보를 가져올 수 없습니다.", Toast.LENGTH_SHORT).show();
                 }
@@ -165,7 +184,7 @@ public class LockScreenActivity extends Activity {
     }
 
     /**
-     * 문제 데이터 로드
+     * Load problem data from Firebase
      */
     private void loadProblemData(final String email) {
         databaseManager.getUserInfo(email, new DatabaseManager.UserInfoCallback() {
@@ -174,10 +193,10 @@ public class LockScreenActivity extends Activity {
                 if (dataSnapshot != null && dataSnapshot.child("ChoiceProblem").getValue() != null) {
                     if (dataSnapshot.child("problem_to_Korean").getValue() != null) {
                         final String problem = dataSnapshot.child("ChoiceProblem").getValue().toString();
-                        final String problem_to_korean = dataSnapshot.child("problem_to_Korean").getValue().toString();
+                        final String problemToKorean = dataSnapshot.child("problem_to_Korean").getValue().toString();
 
                         Log.d("KDJ", "problem:" + problem);
-                        loadProblemYears(email, problem, problem_to_korean);
+                        loadProblemYears(email, problem, problemToKorean);
                     }
                 } else {
                     Toast.makeText(LockScreenActivity.this, "문제 설정을 하지 않음.", Toast.LENGTH_SHORT).show();
@@ -187,25 +206,27 @@ public class LockScreenActivity extends Activity {
     }
 
     /**
-     * 문제 연도 로드
+     * Load problem years
      */
-    private void loadProblemYears(final String email, final String problem, final String problem_to_korean) {
+    private void loadProblemYears(final String email, final String problem, final String problemToKorean) {
         databaseManager.getProblemYears(problem, new DatabaseManager.QuizCallback() {
             @Override
             public void onQuizzesReceived(DataSnapshot dataSnapshot) {
                 if (dataSnapshot != null && dataSnapshot.getChildrenCount() > 0) {
-                    final String randYear = Integer.toString(random.nextInt((int) (dataSnapshot.getChildrenCount())) + 2018);
+                    final String randYear = Integer.toString(
+                        random.nextInt((int) dataSnapshot.getChildrenCount()) + 2018);
                     Log.d("KDJ", "randYear: " + randYear);
-                    loadProblemEpisode(email, problem, problem_to_korean, randYear);
+                    loadProblemEpisode(email, problem, problemToKorean, randYear);
                 }
             }
         });
     }
 
     /**
-     * 문제 회차 로드
+     * Load problem episode
      */
-    private void loadProblemEpisode(final String email, final String problem, final String problem_to_korean, final String year) {
+    private void loadProblemEpisode(final String email, final String problem,
+                                    final String problemToKorean, final String year) {
         FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
         DatabaseReference rootRef = firebaseDatabase.getReference();
         DatabaseReference problemRef = rootRef.child("문제 종류");
@@ -215,51 +236,57 @@ public class LockScreenActivity extends Activity {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 if (dataSnapshot.getChildrenCount() > 0) {
-                    final String randEpisode = Integer.toString(random.nextInt((int) (dataSnapshot.getChildrenCount())) + 1);
+                    final String randEpisode = Integer.toString(
+                        random.nextInt((int) dataSnapshot.getChildrenCount()) + 1);
                     Log.d("KDJ", "randEpisode: " + randEpisode);
-                    loadProblemImage(email, problem, problem_to_korean, year, randEpisode);
+                    loadProblemImage(email, problem, problemToKorean, year, randEpisode);
                 }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
+                Log.e("KDJ", "Error loading episodes", databaseError.toException());
             }
         });
     }
 
     /**
-     * 문제 이미지 및 정답 로드
+     * Load problem image and setup answer listener
      */
-    private void loadProblemImage(final String email, final String problem, final String problem_to_korean, final String year, final String episode) {
+    private void loadProblemImage(final String email, final String problem, final String problemToKorean,
+                                  final String year, final String episode) {
         FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
         DatabaseReference rootRef = firebaseDatabase.getReference();
         DatabaseReference problemRef = rootRef.child("문제 종류");
-        final DatabaseReference problemEpisode = problemRef.child(problem).child("Year").child(year).child(episode);
+        final DatabaseReference problemEpisode = problemRef.child(problem)
+                .child("Year").child(year).child(episode);
 
         problemEpisode.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 if (dataSnapshot.getChildrenCount() > 0) {
-                    final String randImagePath = Integer.toString(random.nextInt((int) (dataSnapshot.getChildrenCount())) + 1);
+                    final String randImagePath = Integer.toString(
+                        random.nextInt((int) dataSnapshot.getChildrenCount()) + 1);
                     Log.d("KDJ", "randImagePath: " + randImagePath);
 
-                    // 파이어베이스 스토리지에서 이미지 로드
+                    // Load image from storage
                     loadImageFromStorage(problem, year, episode, randImagePath);
 
-                    // 정답 로드
-                    final String rightAnswer = dataSnapshot.child(randImagePath).getValue().toString();
-                    setupAnswerListener(email, problem, year, episode, randImagePath, rightAnswer, problem_to_korean);
+                    // Get correct answer
+                    final String correctAnswer = dataSnapshot.child(randImagePath).getValue().toString();
+                    setupAnswerListener(email, problem, year, episode, randImagePath, correctAnswer, problemToKorean);
                 }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
+                Log.e("KDJ", "Error loading problem image", databaseError.toException());
             }
         });
     }
 
     /**
-     * 스토리지에서 이미지 로드
+     * Load image from Firebase Storage
      */
     private void loadImageFromStorage(String problem, String year, String episode, String number) {
         FirebaseStorage storage = FirebaseStorage.getInstance();
@@ -271,38 +298,30 @@ public class LockScreenActivity extends Activity {
             @Override
             public void onSuccess(byte[] bytes) {
                 Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                iv_problem_image.setImageBitmap(bitmap);
+                ivProblemImage.setImageBitmap(bitmap);
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception exception) {
                 Toast.makeText(LockScreenActivity.this, "다운로드 실패.", Toast.LENGTH_SHORT).show();
-                ShowProblem();
+                showProblem();
             }
         });
     }
 
     /**
-     * 정답 선택 리스너 설정
+     * Setup answer selection listener
      */
     private void setupAnswerListener(final String email, final String problem, final String year,
-                                     final String episode, final String problemNumber, final String correctAnswer,
-                                     final String problem_to_korean) {
-        tv_problem.setText(problem_to_korean + " " + year + "년 " + episode + "회 " + problemNumber + "번");
-
-        rg_answer.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(RadioGroup group, int checkedId) {
-                handleAnswerSelection(email, problem, year, episode, problemNumber, correctAnswer, checkedId);
-            }
-        });
+                                     final String episode, final String problemNumber,
+                                     final String correctAnswer, final String problemToKorean) {
+        tvProblem.setText(problemToKorean + " " + year + "년 " + episode + "회 " + problemNumber + "번");
     }
 
     /**
-     * 정답 선택 처리 (코드 중복 제거)
+     * Handle answer selection
      */
-    private void handleAnswerSelection(final String email, final String problem, final String year,
-                                       final String episode, final String problemNumber, final String correctAnswer, int checkedId) {
+    private void handleAnswerSelection(int checkedId) {
         String selectedChoice = null;
 
         if (checkedId == R.id.rb_answer1) {
@@ -315,17 +334,42 @@ public class LockScreenActivity extends Activity {
             selectedChoice = "4";
         }
 
-        if (selectedChoice != null && correctAnswer.equals(selectedChoice)) {
-            // 정답 처리
-            tv_result.setText("정답입니다");
-            pointManager.addPointsForCorrectAnswer(email);
-            finish();
-        } else {
-            // 오답 처리
-            String problemInfo = year + "_" + episode + "_" + problemNumber + "_" + correctAnswer;
-            wrongAnswerManager.recordWrongAnswer(email, problem, problemInfo);
-            Toast.makeText(LockScreenActivity.this, "오답입니다.", Toast.LENGTH_SHORT).show();
-            finish();
+        if (selectedChoice != null) {
+            viewModel.submitAnswer(Integer.parseInt(selectedChoice));
         }
+    }
+
+    /**
+     * Observe ViewModel LiveData changes
+     */
+    private void observeViewModel() {
+        viewModel.getUserAnswerResult().observe(this, result -> {
+            if (result != null) {
+                if ("CORRECT".equals(result)) {
+                    tvResult.setText("정답입니다");
+                    Toast.makeText(LockScreenActivity.this, "정답입니다!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(LockScreenActivity.this, "오답입니다.", Toast.LENGTH_SHORT).show();
+                }
+                finish();
+            }
+        });
+
+        viewModel.getUserPoints().observe(this, points -> {
+            if (points != null) {
+                // Update UI with new points if needed
+            }
+        });
+
+        viewModel.getErrorMessage().observe(this, error -> {
+            if (error != null && !error.isEmpty()) {
+                Toast.makeText(LockScreenActivity.this, error, Toast.LENGTH_SHORT).show();
+                viewModel.clearErrorMessage();
+            }
+        });
+
+        viewModel.getIsLoading().observe(this, isLoading -> {
+            // Handle loading state
+        });
     }
 }
