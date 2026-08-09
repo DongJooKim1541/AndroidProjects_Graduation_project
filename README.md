@@ -1,113 +1,99 @@
-# 잠금화면 기반 퀴즈 리워드 어플리케이션
+# 잠금화면 기반 퀴즈 리워드 애플리케이션
 
 <img src="app/src/main/ic_main-playstore.png" width="20%">
 
-**가천대학교 졸업 프로젝트**
+**가천대학교 졸업 프로젝트 (2020)**
 
 ## 개요
 
-안드로이드 잠금화면 기능을 활용한 퀴즈 리워드 어플리케이션입니다. 사용자가 휴대폰을 잠금 해제할 때마다 퀴즈를 풀고, 정답하면 포인트를 획득할 수 있습니다.
-
-**상태**: ✅ 완성 (2026년 졸업 프로젝트)
+휴대폰 잠금을 해제할 때마다 퀴즈를 띄우고, 정답을 맞히면 포인트를 지급하는 Android 애플리케이션입니다.
+틀린 문제는 오답 노트에 자동으로 기록되어 나중에 복습할 수 있습니다.
 
 ## 주요 기능
 
-- **잠금화면 퀴즈**: 휴대폰 잠금 해제 시 자동으로 퀴즈 표시
-- **포인트 시스템**: 정답당 1,000포인트 획득
-- **오답 노트**: 틀린 문제 자동 기록 및 복습
-- **사용자 관리**: Firebase를 통한 인증 및 데이터 동기화
-- **쇼핑**: 포인트로 상품 구매
+| 기능 | 설명 |
+|------|------|
+| 잠금화면 퀴즈 | 화면이 켜질 때 잠금화면 위에 퀴즈를 표시 |
+| 포인트 | 정답 1문항당 1,000포인트 지급 |
+| 오답 노트 | 틀린 문제를 연도·회차·번호로 분류해 기록하고 복습 |
+| 사용자 관리 | Firebase Authentication 기반 회원가입·로그인 |
+| 프로필 | 프로필 이미지 업로드 (Firebase Storage) |
 
-## 활용 기술
+## 기술 스택
 
+| 항목 | 값 |
+|------|-----|
+| 언어 | Java 8 |
+| 아키텍처 | MVVM (ViewModel + LiveData) |
+| 백엔드 | Firebase Authentication / Realtime Database / Storage |
+| Android Gradle Plugin | 7.4.2 |
+| Gradle | 7.6.4 |
+| compileSdk | 33 |
+| minSdk / targetSdk | 26 (Android 8.0) / 29 (Android 10) |
+| JDK | 17 |
+
+## 빌드
+
+### 요구 사항
+
+- JDK 17
+- Android SDK Platform 33, Build-Tools 33.0.2
+- Android Studio (선택) 또는 Gradle wrapper
+
+### Firebase 설정 (필수)
+
+`app/google-services.json`은 저장소에 포함되어 있지 않습니다.
+[Firebase 콘솔](https://console.firebase.google.com)에서 프로젝트를 만들고 파일을 내려받아
+`app/google-services.json`에 두세요. 이 파일이 없으면 `:app:processDebugGoogleServices`
+단계에서 빌드가 실패합니다.
+
+### SDK 경로
+
+`local.properties`에 Android SDK 경로를 지정합니다(Android Studio가 자동 생성).
+
+```properties
+sdk.dir=C:/Users/<사용자>/AppData/Local/Android/Sdk
 ```
-JAVA
-MVVM Pattern (완료)
-Firebase (Authentication, Realtime Database, Storage)
-```
 
-## 설치 및 실행
-
-### 필수 환경
-- Android Studio 4.0 이상
-- JDK 11 이상
-- Android SDK API Level 26 이상
-
-### 설치 단계
+### 실행
 
 ```bash
-# 저장소 클론
 git clone https://github.com/DongJooKim1541/AndroidProjects_Graduation_project.git
 cd AndroidProjects_Graduation_project
-
-# Firebase 설정
-# 1. Firebase 콘솔에서 google-services.json 다운로드
-# 2. app/google-services.json으로 저장
-
-# Android Studio에서 빌드 및 실행
-# Build > Make Project
-# Run > Run 'app'
+./gradlew assembleDebug
 ```
+
+산출물: `app/build/outputs/apk/debug/app-debug.apk`
+
+> 프로젝트 경로에 한글이 포함된 환경을 지원하기 위해 `gradle.properties`에
+> `android.overridePathCheck=true`를 설정해 두었습니다.
 
 ## 프로젝트 구조
 
 ```
-app/
-├── src/main/
-│   ├── java/com/example/gc_uiactivity/
-│   │   ├── MainActivity.java                (메인 액티비티)
-│   │   ├── SplashActivity.java              (스플래시)
-│   │   ├── lock_screen/                     (잠금화면)
-│   │   ├── user_state/                      (로그인/회원가입)
-│   │   ├── home/                            (홈 화면)
-│   │   ├── options/                         (설정)
-│   │   ├── answer_note/                     (오답 노트)
-│   │   └── cash/                            (포인트/보상)
-│   └── res/
-├── build.gradle
-└── google-services.json.example
+app/src/main/java/com/example/gc_uiactivity/
+├── firebase/       DatabaseManager, PointManager, WrongAnswerManager — Firebase 접근 통합
+├── lock_screen/    ScreenReceiver, ScreenService, ShowForegroundService — 잠금화면 감지
+├── viewmodels/     AuthViewModel, MainActivityViewModel, LockScreenViewModel, ViewModelFactory
+└── ui/
+    ├── activity/   Splash, Login, SignUp, Main, LockScreen
+    ├── fragment/   Home, Option, Cash, Introduce, ChoiceProblem, AnswerNote*, ProfileImageUpload
+    └── adapter/    Year, Round, Num, Option, OptionSwitch, ChoiceProblem
 ```
+
+데이터 흐름은 `Activity/Fragment → ViewModel → firebase 매니저 → Firebase` 한 방향입니다.
+Firebase 호출은 `firebase` 패키지에 모여 있고, 화면은 ViewModel의 LiveData를 관찰합니다.
 
 ## 문서
 
-자세한 내용은 다음 문서를 참고하세요:
-
-- **[docs/SDD.md](docs/SDD.md)** — 소프트웨어 설계 문서
-  - 시스템 아키텍처
-  - Firebase 데이터 구조
-  - 주요 모듈 설명
-  - 기능 흐름
-
-- **[docs/TC.md](docs/TC.md)** — 테스트 케이스
-  - 유닛 테스트
-  - 통합 테스트
-  - 시스템 테스트
-  - 성능 및 보안 테스트
-
-- **[docs/B03_코딩중독.docx](docs/B03_코딩중독.docx)** — 최종 완료 보고서
-- **[docs/B03_코딩중독.pptx](docs/B03_코딩중독.pptx)** — 발표 자료
+- [설계 문서 (SDD)](docs/SDD.md) — 시스템 아키텍처, Firebase 데이터 구조, 모듈 설명
+- [테스트 케이스 (TC)](docs/TC.md) — 검증 시나리오
 
 ## 저자
 
-**Dongjoo Kim** (김동주)
-- Email: dongjookim1541@gmail.com
-- GitHub: [@DongJooKim1541](https://github.com/DongJooKim1541)
-- 소속: 가천대학교
+**김동주 (Dongjoo Kim)** — 가천대학교
+[@DongJooKim1541](https://github.com/DongJooKim1541)
 
-## 라이센스
+## 라이선스
 
-[LICENSE](LICENSE) 파일을 참고하세요.
-
----
-
-## 기술 스택
-
-| 항목 | 버전/프레임워크 |
-|------|----------------|
-| Language | Java |
-| Min SDK | API 26 (Android 8.0) |
-| Target SDK | API 29 (Android 10) |
-| Backend | Firebase Realtime DB + Storage |
-| Auth | Firebase Authentication |
-| Architecture | MVVM (완료) |
-
+[LICENSE](LICENSE) 참고.

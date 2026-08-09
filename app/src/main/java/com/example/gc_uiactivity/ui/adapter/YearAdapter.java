@@ -1,4 +1,4 @@
-﻿package com.example.gc_uiactivity.ui.adapter;
+package com.example.gc_uiactivity.ui.adapter;
 
 import android.content.Context;
 import android.view.LayoutInflater;

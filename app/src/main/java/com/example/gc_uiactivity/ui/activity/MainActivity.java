@@ -1,5 +1,6 @@
 package com.example.gc_uiactivity.ui.activity;
 
+import com.example.gc_uiactivity.R;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;

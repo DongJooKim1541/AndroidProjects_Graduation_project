@@ -1,6 +1,6 @@
 package com.example.gc_uiactivity.ui.activity;
 
-import android.app.Activity;
+import androidx.appcompat.app.AppCompatActivity;
 import android.app.ProgressDialog;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -39,7 +39,7 @@ import java.util.Random;
  * LockScreenActivity with MVVM architecture
  * Displays quiz problems and handles user answers
  */
-public class LockScreenActivity extends Activity {
+public class LockScreenActivity extends AppCompatActivity {
 
     private ImageView ivProblemImage;
     private TextView tvProblem;
@@ -316,6 +316,11 @@ public class LockScreenActivity extends Activity {
                                      final String episode, final String problemNumber,
                                      final String correctAnswer, final String problemToKorean) {
         tvProblem.setText(problemToKorean + " " + year + "년 " + episode + "회 " + problemNumber + "번");
+
+        // 정답과 오답 기록용 정보를 ViewModel 로 넘긴다.
+        // 이 호출이 없으면 submitAnswer 가 정답을 알 수 없어 항상 오답으로 채점된다.
+        String problemInfo = year + "_" + episode + "_" + problemNumber + "_" + correctAnswer;
+        viewModel.setQuiz(problem, problemInfo, correctAnswer);
     }
 
     /**

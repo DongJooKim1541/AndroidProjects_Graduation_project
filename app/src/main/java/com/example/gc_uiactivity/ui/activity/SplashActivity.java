@@ -1,5 +1,6 @@
-﻿package com.example.gc_uiactivity.ui.activity;
+package com.example.gc_uiactivity.ui.activity;
 
+import com.example.gc_uiactivity.R;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;

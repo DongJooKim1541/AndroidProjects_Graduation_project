@@ -1,6 +1,6 @@
 package com.example.gc_uiactivity.ui.activity;
 
-import android.app.Activity;
+import androidx.appcompat.app.AppCompatActivity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -21,7 +21,7 @@ import com.google.firebase.auth.FirebaseUser;
  * LoginActivity with MVVM architecture
  * Handles user login and navigation to MainActivity
  */
-public class LoginActivity extends Activity {
+public class LoginActivity extends AppCompatActivity {
 
     private ImageView ivLoginImg;
     private EditText editTextEmail;
@@ -35,7 +35,7 @@ public class LoginActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_login);
 
         // Initialize ViewModel

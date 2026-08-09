@@ -440,15 +440,11 @@ MVVM (Model-View-ViewModel) 패턴을 완전히 구현하여 UI와 비즈니스 
 implementation 'androidx.lifecycle:lifecycle-viewmodel:2.5.1'
 implementation 'androidx.lifecycle:lifecycle-livedata:2.5.1'
 implementation 'androidx.lifecycle:lifecycle-runtime:2.5.1'
-implementation 'androidx.lifecycle:lifecycle-common:2.5.1'
-implementation 'androidx.databinding:databinding-runtime:7.4.0'
 implementation 'androidx.fragment:fragment:1.5.5'
-
-// DataBinding 활성화
-buildFeatures {
-    dataBinding true
-}
 ```
+
+DataBinding은 사용하지 않는다(`<layout>` 태그를 쓰는 레이아웃이 없다).
+`databinding-runtime`을 직접 선언하면 AGP가 주입하는 버전과 충돌하므로 선언하지 않는다.
 
 ### 8.4 ViewModel 클래스 구현
 
@@ -484,38 +480,23 @@ buildFeatures {
 **역할**: 퀴즈/잠금화면 기능 관리
 
 **노출 LiveData:**
-- `quizQuestionLiveData`: 현재 퀴즈 문제 정보
-- `quizImageUrlLiveData`: 퀴즈 이미지 URL
-- `quizOptionsLiveData`: 4개 선택지
-- `correctAnswerLiveData`: 정답
-- `userAnswerResultLiveData`: 사용자 답변 결과 (정답/오답)
-- `userPointsLiveData`: 사용자 현재 포인트
+- `correctAnswerLiveData`: 정답 번호
 - `selectedAnswerLiveData`: 사용자가 선택한 답
+- `userAnswerResultLiveData`: 채점 결과 (`CORRECT` / `INCORRECT`)
+- `userPointsLiveData`: 사용자 현재 포인트
 - `isLoadingLiveData`: 로딩 상태
 - `errorMessageLiveData`: 에러 메시지
 
 **주요 메서드:**
-- `loadQuiz()`: Firebase에서 랜덤 퀴즈 로드
-- `submitAnswer(selectedAnswer: String)`: 답변 제출 및 판정
-- `updatePoints(points: Int)`: 포인트 업데이트
-- `recordWrongAnswer(wrongAnswerInfo: String)`: 오답 기록
+- `setQuiz(problemType, problemInfo, correctAnswer)`: 화면이 출제한 문제 정보를 전달.
+  이 호출이 없으면 정답을 알 수 없어 채점이 항상 오답이 된다
+- `submitAnswer(selectedOption: int)`: 채점 후 정답이면 포인트 지급, 오답이면 오답 기록
+- `loadUserPoints()`: 현재 포인트 조회
 
-#### AnswerNoteViewModel.java
-**역할**: 오답 노트 데이터 관리
+퀴즈 데이터 로딩 자체는 아직 `LockScreenActivity`가 담당한다.
 
-**노출 LiveData:**
-- `wrongAnswersLiveData`: 오답 목록
-- `selectedYearLiveData`: 선택된 연도 필터
-- `selectedRoundLiveData`: 선택된 회차 필터
-- `selectedProblemLiveData`: 선택된 문제 필터
-- `isLoadingLiveData`: 로딩 상태
-- `errorMessageLiveData`: 에러 메시지
-
-**주요 메서드:**
-- `loadWrongAnswers(year: String, round: String, problemNum: String)`: 오답 조회
-- `deleteWrongAnswer(wrongAnswerId: String)`: 개별 오답 삭제
-- `deleteAllWrongAnswers()`: 모든 오답 삭제
-- `refreshData()`: 데이터 새로고침
+> 오답 노트 화면은 ViewModel로 옮기지 않았다.
+> `AnswerNote*Fragment`가 `WrongAnswerManager`를 직접 사용한다.
 
 #### ViewModelFactory.java
 **역할**: 의존성 주입을 통한 ViewModel 인스턴스 생성
@@ -528,22 +509,15 @@ public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
         return (T) new MainActivityViewModel();
     } else if (modelClass.isAssignableFrom(LockScreenViewModel.class)) {
         return (T) new LockScreenViewModel();
-    } else if (modelClass.isAssignableFrom(AnswerNoteViewModel.class)) {
-        return (T) new AnswerNoteViewModel();
     }
     throw new IllegalArgumentException("Unknown ViewModel class");
 }
 ```
 
-### 8.5 Activity 및 Fragment 리팩토링
+### 8.5 화면별 ViewModel 연결
 
-#### MainActivity.java
-**변경 사항:**
-- ViewModel 초기화 (ViewModelFactory 사용)
-- LiveData Observer 등록
-- Fragment 전환 로직을 ViewModel에서 관리
+ViewModel은 `ViewModelFactory`를 통해 생성하고, 화면은 LiveData를 관찰만 한다.
 
-**코드 예시:**
 ```java
 MainActivityViewModel viewModel = new ViewModelProvider(this, new ViewModelFactory())
     .get(MainActivityViewModel.class);
@@ -553,23 +527,15 @@ viewModel.getCurrentUserEmail().observe(this, email -> {
 });
 ```
 
-#### LoginActivity.java
-**변경 사항:**
-- FirebaseAuth 리스너 제거
-- AuthViewModel으로 인증 로직 이관
-- 로딩 상태 LiveData 관찰
+| 화면 | ViewModel | 관찰하는 상태 |
+|------|-----------|--------------|
+| `MainActivity` | `MainActivityViewModel` | 사용자 이메일, 현재 메뉴 |
+| `HomeFragment` | `MainActivityViewModel` (액티비티 공유) | 사용자 데이터 |
+| `LoginActivity` | `AuthViewModel` | 인증 결과, 로딩 상태, 에러 |
+| `LockScreenActivity` | `LockScreenViewModel` | 채점 결과, 포인트, 에러 |
 
-#### LockScreenActivity.java
-**변경 사항:**
-- LockScreenViewModel으로 퀴즈 로직 이관
-- 정답 제출을 ViewModel 메서드로 처리
-- 포인트 업데이트 LiveData 관찰
-
-#### HomeFragment.java
-**변경 사항:**
-- MainActivityViewModel 초기화
-- 사용자 데이터 LiveData 관찰
-- UI 업데이트 자동화
+`LoginActivity`와 `LockScreenActivity`는 LiveData를 관찰하기 위해
+`AppCompatActivity`(= `LifecycleOwner`)를 상속한다.
 
 ### 8.6 LiveData 패턴
 
@@ -606,25 +572,16 @@ viewModel.getUserEmail().observe(this, email -> {
 | **유지보수** | 코드 가독성과 유지보수성 향상 |
 | **재사용성** | ViewModel을 여러 UI 컴포넌트에서 공유 가능 |
 
-### 8.8 마이그레이션 체크리스트
+### 8.8 아직 적용되지 않은 범위
 
-- [x] MVVM 의존성을 build.gradle에 추가
-- [x] AuthViewModel 생성
-- [x] MainActivityViewModel 생성
-- [x] LockScreenViewModel 생성
-- [x] AnswerNoteViewModel 생성
-- [x] ViewModelFactory 생성
-- [x] MainActivity MVVM 적용
-- [x] LoginActivity MVVM 적용
-- [x] LockScreenActivity MVVM 적용
-- [x] HomeFragment MVVM 적용
+- 오답 노트 화면(`AnswerNote*Fragment`)은 `WrongAnswerManager`를 직접 사용한다
+- 퀴즈 로딩은 `LockScreenActivity`가 담당한다
 
 ### 8.9 향후 개선 사항
 
 1. **Repository 패턴**: 데이터 접근 로직을 Repository로 분리
 2. **Dependency Injection**: Dagger/Hilt를 통한 자동 의존성 주입
 3. **유닛 테스트**: ViewModel 독립 테스트
-4. **LiveData to StateFlow**: Kotlin Coroutine 마이그레이션
 
 ---
 
@@ -640,10 +597,16 @@ viewModel.getUserEmail().observe(this, email -> {
 - **문제**: 타입 안전성 부족, 성능 저하
 - **해결**: ViewBinding 적용
 
-### 9.3 Callback Hell 리팩토링 (진행 중)
-- **문제**: LockScreenActivity.ShowProblem() 메서드가 7단계 콜백 중첩
-- **영향**: 디버깅 불가능, 메모리 누수 위험
-- **계획**: RxJava 또는 Kotlin Coroutine으로 마이그레이션
+### 9.3 콜백 중첩
+- **현재**: `LockScreenActivity`의 퀴즈 로딩이 `loadProblemData` → `loadProblemYears`
+  → `loadProblemEpisode` → `loadProblemImage` → `setupAnswerListener` 로 이어지는 콜백 체인
+- **개선**: 단계별 메서드로 나눠 중첩은 해소했으나, Firebase 콜백 체인 자체는 남아 있다
+- **계획**: Repository 도입 또는 Coroutine 마이그레이션
+
+### 9.4 로그인 정보 저장
+- **문제**: Firebase Realtime Database에 비밀번호가 평문으로 저장되는 경로가 남아 있다
+- **영향**: 계정 정보 노출
+- **해결**: Firebase Authentication만 사용하고 DB에는 비밀번호를 저장하지 않도록 변경
 
 ---
 
@@ -706,4 +669,3 @@ targetSdkVersion 29  // Android 10
 - [Firebase Documentation](https://firebase.google.com/docs)
 - [MVVM Architecture Pattern](https://developer.android.com/jetpack/guide)
 - [Android Security Best Practices](https://developer.android.com/privacy-and-security)
-- [MVVM_REFACTORING.md](MVVM_REFACTORING.md) — MVVM 구현 상세 문서

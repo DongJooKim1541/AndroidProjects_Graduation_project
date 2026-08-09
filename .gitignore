@@ -1,14 +1,53 @@
-*.iml
-.gradle
-/local.properties
-.idea/
-.DS_Store
-/build
+# ── 비밀 정보 (절대 커밋 금지) ─────────────────────────────
+# 서명 키
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+# SDK 경로·API 키 등 로컬 설정
+local.properties
+# Firebase 프로젝트 설정 — 각자 발급받아 app/google-services.json 에 둔다
+google-services.json
+# 자격 증명
+*.pem
+*.p12
+*.p8
+secrets.properties
+
+# ── 빌드 산출물 ────────────────────────────────────────────
+build/
 /captures
 .externalNativeBuild
 .cxx
-gradle/
-google-services.json
+gen/
+out/
+release/
 *.apk
-app/release/
+*.aab
+*.ap_
+*.dex
+*.class
+*.hprof
+lint-results*.html
+lint-results*.xml
+
+# ── Gradle ────────────────────────────────────────────────
+# 래퍼(gradle/wrapper)는 추적한다. 없으면 ./gradlew 가 동작하지 않는다.
 .gradle/
+.kotlin/
+
+# ── IDE ───────────────────────────────────────────────────
+*.iml
+.idea/
+.navigation/
+freeline/
+fabric.properties
+
+# ── OS / 동기화 ────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── 기타 ──────────────────────────────────────────────────
+*.log
+.claude/

@@ -1,4 +1,4 @@
-﻿package com.example.gc_uiactivity.user_state;
+package com.example.gc_uiactivity.ui.activity;
 
 import android.app.Activity;
 import android.os.Bundle;

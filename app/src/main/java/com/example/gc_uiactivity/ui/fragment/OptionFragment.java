@@ -1,5 +1,7 @@
-﻿package com.example.gc_uiactivity.ui.fragment;
+package com.example.gc_uiactivity.ui.fragment;
 
+import com.example.gc_uiactivity.ui.adapter.OptionSwitchAdapter;
+import com.example.gc_uiactivity.ui.adapter.OptionAdapter;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;

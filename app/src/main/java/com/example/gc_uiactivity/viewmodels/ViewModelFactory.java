@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModelProvider;
  */
 public class ViewModelFactory implements ViewModelProvider.Factory {
 
+    @SuppressWarnings("unchecked")
     @NonNull
     @Override
     public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
@@ -19,8 +20,6 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
             return (T) new MainActivityViewModel();
         } else if (modelClass.isAssignableFrom(LockScreenViewModel.class)) {
             return (T) new LockScreenViewModel();
-        } else if (modelClass.isAssignableFrom(AnswerNoteViewModel.class)) {
-            return (T) new AnswerNoteViewModel();
         }
         throw new IllegalArgumentException("Unknown ViewModel class: " + modelClass.getName());
     }

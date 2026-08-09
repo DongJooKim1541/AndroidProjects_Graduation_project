@@ -1,4 +1,4 @@
-﻿package com.example.gc_uiactivity.ui.fragment;
+package com.example.gc_uiactivity.ui.fragment;
 
 import android.content.Intent;
 import android.net.Uri;

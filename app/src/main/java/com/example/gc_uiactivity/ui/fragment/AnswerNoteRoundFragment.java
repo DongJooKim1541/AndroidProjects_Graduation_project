@@ -1,5 +1,6 @@
-﻿package com.example.gc_uiactivity.ui.fragment;
+package com.example.gc_uiactivity.ui.fragment;
 
+import com.example.gc_uiactivity.ui.adapter.RoundAdapter;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;

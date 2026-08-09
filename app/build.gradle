@@ -2,12 +2,13 @@ apply plugin: 'com.android.application'
 apply plugin: 'com.google.gms.google-services'
 
 android {
-    compileSdkVersion 29
-    buildToolsVersion "29.0.3"
+    namespace 'com.example.gc_uiactivity'
+    compileSdk 33
 
     defaultConfig {
         applicationId "com.example.gc_uiactivity"
         minSdkVersion 26
+        // 동작이 바뀌지 않도록 targetSdk 는 원래 값을 유지한다.
         targetSdkVersion 29
         versionCode 1
         versionName "1.0"
@@ -20,32 +21,27 @@ android {
         }
     }
 
-    buildFeatures {
-        dataBinding true
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
-    implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.2'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.cardview:cardview:1.0.0'
 
-    // Firebase
-    implementation 'com.google.firebase:firebase-auth:16.0.2'
-    implementation 'com.google.firebase:firebase-database:16.0.1'
-    implementation 'com.firebaseui:firebase-ui-auth:4.1.0'
-    implementation 'com.google.firebase:firebase-core:16.0.1'
-    implementation 'com.google.firebase:firebase-storage:16.0.1'
-    implementation 'com.firebaseui:firebase-ui-storage:3.2.2'
+    // Firebase. BoM 이 각 모듈의 버전을 맞춘다.
+    implementation platform('com.google.firebase:firebase-bom:32.7.0')
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.firebase:firebase-database'
+    implementation 'com.google.firebase:firebase-storage'
 
-    // MVVM Architecture Components
+    // MVVM
     implementation 'androidx.lifecycle:lifecycle-viewmodel:2.5.1'
     implementation 'androidx.lifecycle:lifecycle-livedata:2.5.1'
     implementation 'androidx.lifecycle:lifecycle-runtime:2.5.1'
-    implementation 'androidx.lifecycle:lifecycle-common:2.5.1'
-    implementation 'androidx.databinding:databinding-runtime:7.4.0'
-
-    // Fragment KTX for ViewModels
     implementation 'androidx.fragment:fragment:1.5.5'
 }

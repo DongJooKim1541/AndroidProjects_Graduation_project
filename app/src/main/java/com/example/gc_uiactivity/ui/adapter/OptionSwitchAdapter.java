@@ -1,5 +1,7 @@
-﻿package com.example.gc_uiactivity.ui.adapter;
+package com.example.gc_uiactivity.ui.adapter;
 
+import com.example.gc_uiactivity.lock_screen.ScreenService;
+import com.example.gc_uiactivity.lock_screen.ShowForegroundService;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
@@ -17,8 +19,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 
 import com.example.gc_uiactivity.R;
-import com.example.gc_uiactivity.ui.activity.ScreenService;
-import com.example.gc_uiactivity.ui.activity.ShowForegroundService;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;

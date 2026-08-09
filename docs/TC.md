@@ -1,5 +1,22 @@
 # 테스트 케이스 문서 (TC)
 
+## 0. 검증 현황
+
+| 항목 | 상태 | 근거 |
+|------|------|------|
+| 빌드 (`./gradlew clean assembleDebug`) | ✅ 통과 | JDK 17 / AGP 7.4.2 / Gradle 7.6.4 / compileSdk 33 에서 `app-debug.apk` 생성 확인 |
+| 자동화 테스트 | ❌ 없음 | 프로젝트에 테스트 소스가 없다 |
+| 아래 시나리오 실행 | ❌ 미실행 | 기기/에뮬레이터에서 직접 확인해야 한다 |
+
+아래 항목들은 **실행해야 할 검증 목록**이다. "예상 결과"는 기대값이며 측정 결과가 아니다.
+
+### 사전 조건
+- `app/google-services.json` (Firebase 콘솔에서 발급)
+- Android 8.0(API 26) 이상 기기 또는 에뮬레이터
+- 인터넷 연결
+
+---
+
 ## 1. 테스트 전략
 
 ### 1.1 테스트 레벨
@@ -106,46 +123,9 @@
 
 ### 2.3 데이터 모델 테스트
 
-#### TC-U-005: User 객체 생성 및 검증
-```
-테스트 명: User 모델 클래스 검증
-조건:
-  - email: "test@example.com"
-  - nickname: "TestUser"
-  - points: 5000
-
-예상 결과:
-  - User 객체 생성 성공
-  - 모든 필드 값 정확
-
-검증:
-  User user = new User(
-    "test@example.com",
-    "TestUser",
-    5000
-  );
-  assert user.getEmail().equals("test@example.com");
-  assert user.getPoints() == 5000;
-```
-
-#### TC-U-006: Quiz 객체 검증
-```
-테스트 명: Quiz 모델 생성
-조건:
-  - 문제 타입: "수학"
-  - 연도: 2018
-  - 회차: 1
-  - 문제번호: 3
-
-예상 결과:
-  - Quiz 객체 생성 성공
-  - 필드값 정확
-
-검증:
-  Quiz quiz = new Quiz("수학", 2018, 1, 3);
-  assert quiz.getType().equals("수학");
-  assert quiz.getYear() == 2018;
-```
+> 이 프로젝트에는 `User` / `Quiz` 같은 모델 클래스가 없다.
+> Firebase `DataSnapshot`을 각 화면에서 직접 읽어 쓰는 구조이므로 모델 단위 테스트 대상이 없다.
+> 모델 클래스를 도입하면 이 절에 테스트를 추가한다.
 
 ---
 
