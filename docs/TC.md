@@ -2,16 +2,45 @@
 
 ## 0. 검증 현황
 
+### 실행 환경 (2026-08-09)
+
+Android 11 (API 30) 에뮬레이터, 1080×2340 / 440dpi, Google APIs x86_64
+빌드: JDK 17 / AGP 7.4.2 / Gradle 7.6.4 / compileSdk 33
+
+### 🚫 백엔드가 비활성 상태다
+
+앱을 실행하면 Firebase가 다음 로그를 남기고 연결을 끊는다.
+
+```
+W PersistentConnection: Firebase Database connection was forcefully killed by the server.
+  Will not attempt reconnect. Reason: The Firebase database 'charged-dialect-285301' has been deactivated.
+```
+
+**2020년에 쓰던 Firebase 프로젝트가 비활성화되어 있다.** 로그인·퀴즈·포인트·오답 노트는
+모두 이 백엔드에 의존하므로, 코드와 무관하게 동작하지 않는다.
+아래 Firebase 의존 항목들은 **결함이 아니라 실행 불가**다.
+
+되살리려면 Firebase 콘솔에서 프로젝트를 다시 활성화하거나 새로 만들고,
+새 `app/google-services.json`을 넣은 뒤 재빌드해야 한다.
+
+### 실행 결과
+
 | 항목 | 상태 | 근거 |
 |------|------|------|
-| 빌드 (`./gradlew clean assembleDebug`) | ✅ 통과 | JDK 17 / AGP 7.4.2 / Gradle 7.6.4 / compileSdk 33 에서 `app-debug.apk` 생성 확인 |
+| 빌드 (`./gradlew clean assembleDebug`) | ✅ 통과 | `app-debug.apk` 생성, GitHub 클론에서도 재현 |
+| 앱 설치·실행 | ✅ 통과 | 크래시 없이 스플래시 → 메인 화면 진입 |
+| 스플래시 → 메인 전환 | ✅ 통과 | `am start -W` TotalTime 628ms (에뮬레이터 참고값) |
+| 홈 화면 렌더링 | ✅ 통과 | 사용자명·잠금 여부·포인트·퀴즈 유형 영역 표시 |
+| 비로그인 상태 메뉴 접근 차단 | ✅ 통과 | 홈 외 메뉴 탭 시 "로그인을 해주시기 바랍니다." 안내 후 전환 차단 |
+| 비로그인 상태 사용자 아이콘 | ✅ 통과 | Login 아이콘 표시 (수정 전에는 Logout 아이콘이 떠 있었다) |
+| 로그인 / 회원가입 | ⛔ 실행 불가 | Firebase 프로젝트 비활성 |
+| 퀴즈 · 포인트 · 오답 노트 | ⛔ 실행 불가 | Firebase 프로젝트 비활성 |
 | 자동화 테스트 | ❌ 없음 | 프로젝트에 테스트 소스가 없다 |
-| 아래 시나리오 실행 | ❌ 미실행 | 기기/에뮬레이터에서 직접 확인해야 한다 |
 
-아래 항목들은 **실행해야 할 검증 목록**이다. "예상 결과"는 기대값이며 측정 결과가 아니다.
+아래 시나리오의 "예상 결과"는 기대값이며 측정값이 아니다.
 
 ### 사전 조건
-- `app/google-services.json` (Firebase 콘솔에서 발급)
+- **활성 상태인 Firebase 프로젝트**와 그 `app/google-services.json`
 - Android 8.0(API 26) 이상 기기 또는 에뮬레이터
 - 인터넷 연결
 

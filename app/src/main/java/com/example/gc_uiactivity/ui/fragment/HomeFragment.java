@@ -39,6 +39,8 @@ import com.google.firebase.storage.StorageReference;
  */
 public class HomeFragment extends Fragment implements View.OnClickListener {
 
+    private static final String TAG = "HomeFragment";
+
     private ImageView ivUserState;
     private ImageView ivUserImage;
     private ImageView ivIntroduce;
@@ -279,7 +281,9 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
      * Load and display user state (login/logout)
      */
     private void loadUserState() {
-        final int[] imageResources = {R.drawable.login_icon, R.drawable.logout_icon};
+        // 로그인 여부를 확인하기 전에는 로그아웃이 아니라 로그인 아이콘이 기본이다.
+        // Firebase 조회가 실패하거나 응답이 늦으면 이 값이 그대로 남는다.
+        ivUserState.setImageResource(R.drawable.login_icon);
 
         FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
         DatabaseReference rootRef = firebaseDatabase.getReference();
@@ -290,17 +294,16 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 String email = (String) dataSnapshot.child("Email").getValue();
-                if (email != null) {
-                    ivUserState.setImageResource(imageResources[1]); // Logout icon
-                } else {
-                    ivUserState.setImageResource(imageResources[0]); // Login icon
-                }
-                Log.d("KDJ", "HomeEmail:" + email);
+                boolean loggedIn = email != null;
+                ivUserState.setImageResource(
+                        loggedIn ? R.drawable.logout_icon : R.drawable.login_icon);
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
-                Log.e("KDJ", "Error loading user state", databaseError.toException());
+                // 조회 실패는 로그인 상태를 확인하지 못한 것이므로 로그인 아이콘을 유지한다.
+                Log.e(TAG, "Error loading user state", databaseError.toException());
+                ivUserState.setImageResource(R.drawable.login_icon);
             }
         });
     }

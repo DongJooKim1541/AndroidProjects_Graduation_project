@@ -197,7 +197,7 @@
                             android:layout_marginTop="10px"
                             android:layout_weight="1"
                             android:backgroundTint="#FFFFFF"
-                            app:srcCompat="@drawable/logout_icon" />
+                            app:srcCompat="@drawable/login_icon" />
 
                         <ImageButton
                             android:id="@+id/iv_introduce"
