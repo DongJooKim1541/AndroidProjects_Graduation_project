@@ -218,18 +218,39 @@ public class LockScreenActivity extends AppCompatActivity {
     }
 
     /**
+     * 스냅샷의 자식 키 중 하나를 무작위로 고른다. 자식이 없으면 null.
+     *
+     * 실제 키를 보고 고른다. 이전에는 연도를 {@code nextInt(개수) + 2018},
+     * 회차를 {@code nextInt(개수) + 1} 로 만들었는데, 이는 키가 2018 부터 1 씩
+     * 이어진다는 가정이다. 2019 년만 등록된 종목(산업기사·기능사)에서는 개수가 1 이라
+     * 항상 "2018" 이 나왔고, 그런 노드는 없으므로 잠금화면에 문제가 아예 뜨지 않았다.
+     */
+    private String randomKeyOf(DataSnapshot snapshot) {
+        if (snapshot == null || !snapshot.hasChildren()) {
+            return null;
+        }
+        List<String> keys = new ArrayList<>();
+        for (DataSnapshot child : snapshot.getChildren()) {
+            keys.add(child.getKey());
+        }
+        return keys.get(random.nextInt(keys.size()));
+    }
+
+    /**
      * Load problem years
      */
     private void loadProblemYears(final String email, final String problem, final String problemToKorean) {
         databaseManager.getProblemYears(problem, new DatabaseManager.QuizCallback() {
             @Override
             public void onQuizzesReceived(DataSnapshot dataSnapshot) {
-                if (dataSnapshot != null && dataSnapshot.getChildrenCount() > 0) {
-                    final String randYear = Integer.toString(
-                        random.nextInt((int) dataSnapshot.getChildrenCount()) + 2018);
-                    Log.d("KDJ", "randYear: " + randYear);
-                    loadProblemEpisode(email, problem, problemToKorean, randYear);
+                final String randYear = randomKeyOf(dataSnapshot);
+                if (randYear == null) {
+                    Toast.makeText(LockScreenActivity.this,
+                            "등록된 문제가 없습니다.", Toast.LENGTH_SHORT).show();
+                    return;
                 }
+                Log.d("KDJ", "randYear: " + randYear);
+                loadProblemEpisode(email, problem, problemToKorean, randYear);
             }
         });
     }
@@ -247,12 +268,14 @@ public class LockScreenActivity extends AppCompatActivity {
         problemYear.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (dataSnapshot.getChildrenCount() > 0) {
-                    final String randEpisode = Integer.toString(
-                        random.nextInt((int) dataSnapshot.getChildrenCount()) + 1);
-                    Log.d("KDJ", "randEpisode: " + randEpisode);
-                    loadProblemImage(email, problem, problemToKorean, year, randEpisode);
+                final String randEpisode = randomKeyOf(dataSnapshot);
+                if (randEpisode == null) {
+                    Toast.makeText(LockScreenActivity.this,
+                            "등록된 문제가 없습니다.", Toast.LENGTH_SHORT).show();
+                    return;
                 }
+                Log.d("KDJ", "randEpisode: " + randEpisode);
+                loadProblemImage(email, problem, problemToKorean, year, randEpisode);
             }
 
             @Override
@@ -276,14 +299,8 @@ public class LockScreenActivity extends AppCompatActivity {
         problemEpisode.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (dataSnapshot.getChildrenCount() > 0) {
-                    // 실제 자식 키 중에서 고른다. 이전에는 키가 1..N 으로 이어져 있다고
-                    // 가정하고 인덱스를 만들어서, 키가 다르면 null 로 NPE 가 났다.
-                    List<String> keys = new ArrayList<>();
-                    for (DataSnapshot child : dataSnapshot.getChildren()) {
-                        keys.add(child.getKey());
-                    }
-                    final String randImagePath = keys.get(random.nextInt(keys.size()));
+                final String randImagePath = randomKeyOf(dataSnapshot);
+                if (randImagePath != null) {
                     Log.d("KDJ", "randImagePath: " + randImagePath);
 
                     // Get correct answer

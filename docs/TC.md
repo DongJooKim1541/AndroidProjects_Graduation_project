@@ -82,6 +82,24 @@ Firebase projects that are on the no-cost Spark pricing plan."}}
 | 8 | 이미지 실패 시 무한 재시도 | 실패 콜백이 자기 자신을 다시 호출 |
 | 9 | 유형별 첫 오답이 기록 안 됨 | 비동기 쓰기 후 같은 스냅샷 재읽기 |
 | 10 | Points 없으면 포인트 미지급 | `NumberFormatException` 만 처리 |
+| 11 | 산업기사·기능사를 고르면 잠금화면에 문제가 안 뜸 | 연도를 `nextInt(개수)+2018` 로 계산 — 2019 만 있으면 항상 없는 노드 "2018" 을 가리킴 |
+
+11번은 DB 를 직접 조회해 확인했다(에뮬레이터 불필요).
+
+```bash
+DB=https://charged-dialect-285301.firebaseio.com
+P=%EB%AC%B8%EC%A0%9C%20%EC%A2%85%EB%A5%98      # "문제 종류"
+for k in rb_IPE rb_IPIE rb_IPT; do curl -s "$DB/$P/$k/Year.json?shallow=true"; echo; done
+# rb_IPE  {"2018":true,"2019":true}   → 2018|2019   정상
+# rb_IPIE {"2019":true}               → 항상 2018   문제 없음
+# rb_IPT  {"2019":true}               → 항상 2018   문제 없음
+```
+
+연도·회차·번호 세 단계 모두 실제 자식 키에서 고르도록(`randomKeyOf`) 바꿨다.
+자세한 내용은 [SDD 9.6](SDD.md#96-문제-출제-키-선택-수정됨).
+
+**아직 구현되지 않은 기능**(포인트 상점 지급, 오답 다시 풀기, 재부팅 후 잠금화면
+복구 등)은 결함이 아니라 미완성 범위다. [README](../README.md#구현되지-않은-기능) 참고.
 
 아래 시나리오의 "예상 결과"는 기대값이며 측정값이 아니다.
 
