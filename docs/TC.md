@@ -7,57 +7,76 @@
 Android 11 (API 30) 에뮬레이터, 1080×2340 / 440dpi, Google APIs x86_64
 빌드: JDK 17 / AGP 7.4.2 / Gradle 7.6.4 / compileSdk 33
 
-### 🚫 백엔드가 비활성 상태다
+### ✅ 백엔드 복구 (2026-08-17)
 
-앱을 실행하면 Firebase가 다음 로그를 남기고 연결을 끊는다.
+Realtime Database 인스턴스를 다시 켜고 `app/google-services.json` 을 재발급받아
+넣은 뒤, Firebase 의존 기능을 **처음으로 끝까지 실행**했다.
+
+| 항목 | 값 |
+|------|-----|
+| 실행일 | 2026-08-17 |
+| 기기 | Android 11 (API 30) 에뮬레이터, 1080×2340 |
+| 빌드 | JDK 17 / AGP 7.4.2 / Gradle 7.6.4 / compileSdk 33 |
+| DB | `charged-dialect-285301` (us-central1), 규칙 공개 |
+
+### ⚠️ Cloud Storage 는 여전히 사용 불가
 
 ```
-W PersistentConnection: Firebase Database connection was forcefully killed by the server.
-  Will not attempt reconnect. Reason: The Firebase database 'charged-dialect-285301' has been deactivated.
+{"error":{"code":402,"message":"Cloud Storage for Firebase no longer supports
+Firebase projects that are on the no-cost Spark pricing plan."}}
 ```
 
-**2020년에 쓰던 Firebase 프로젝트의 Realtime Database 인스턴스가 비활성 상태다.**
-로그인·퀴즈·포인트·오답 노트는 모두 이 백엔드에 의존하므로, 코드와 무관하게
-동작하지 않는다. 아래 Firebase 의존 항목들은 **결함이 아니라 실행 불가**다.
+2024-09 정책 변경으로 **무료(Spark) 요금제에서는 Storage 접근이 차단**된다.
+버킷과 이미지 데이터는 남아 있고 접근만 막힌 것이라 코드로는 풀 수 없다.
 
-#### 재검증 (2026-08-17) — 설정 파일을 새로 받아도 해결되지 않는다
+문제 이미지는 앱에 포함되어 있지 않고 100% 서버에서 받는다
+(`app/src/main/res/drawable` 에는 아이콘·배경뿐, `assets/` 없음).
 
-Firebase 콘솔에서 `google-services.json`을 새로 내려받아 `app/`에 넣고 클린 빌드했다.
-
-| 확인 | 결과 |
-|------|------|
-| `processDebugGoogleServices` 가 새 파일을 소비 | ✅ `google_app_id` = `1:1052677891901:android:318ef2e7114dc7e1af8754` (`com.example.gc_uiactivity`) |
-| `FirebaseApp` 초기화 | ✅ `FirebaseInitProvider: FirebaseApp initialization successful` |
-| Realtime Database 연결 | ⛔ 위 `has been deactivated` 로그 그대로 재현 |
-
-즉 **설정 파일이나 API 키의 문제가 아니다.** 서버 쪽 Realtime Database 인스턴스가
-비활성이라 연결이 즉시 끊긴다. 콘솔에서 인스턴스를 다시 켜거나 새로 만들어야 한다.
-새로 만들면 `firebase_url`이 바뀌므로 `google-services.json`을 **다시** 받아야 한다.
-
-#### 파급: 로그인 화면 자체에 도달할 수 없다
-
-`HomeFragment.handleUserStateClick()`이 로그인 화면으로 보내기 전에
-`현재 상태/계정 정보`를 먼저 읽는다. DB가 죽어 있으면 `onDataChange` 도
-`onCancelled` 도 호출되지 않아 **버튼을 눌러도 아무 일이 일어나지 않는다**
-(크래시는 없다. `FATAL EXCEPTION` 0건).
-
-따라서 DB가 살아나기 전에는 Firebase 의존 TC를 한 건도 실행할 수 없다.
+**우회 경로를 넣었다.** `IMAGE_BASE_URL` 을 지정하면 같은 경로 구조
+(`{base}/images/{문제종류}/{년}/{회}/{번호}.jpeg`) 를 가진 임의의 HTTP 호스트에서
+이미지를 받는다. 로컬 HTTP 서버로 실제 잠금화면에 이미지가 표시되는 것과
+`StorageException` 이 0 건이 되는 것을 확인했다.
 
 ### 실행 결과
 
 | 항목 | 상태 | 근거 |
 |------|------|------|
-| 빌드 (`./gradlew clean assembleDebug`) | ✅ 통과 | `app-debug.apk` 생성, GitHub 클론에서도 재현 |
-| 앱 설치·실행 | ✅ 통과 | 크래시 없이 스플래시 → 메인 화면 진입 |
-| 스플래시 → 메인 전환 | ✅ 통과 | `am start -W` TotalTime 628ms (에뮬레이터 참고값) |
-| 홈 화면 렌더링 | ✅ 통과 | 사용자명·잠금 여부·포인트·퀴즈 유형 영역 표시 |
-| 비로그인 상태 메뉴 접근 차단 | ✅ 통과 | 홈 외 메뉴 탭 시 "로그인을 해주시기 바랍니다." 안내 후 전환 차단 |
-| 비로그인 상태 사용자 아이콘 | ✅ 통과 | Login 아이콘 표시 (수정 전에는 Logout 아이콘이 떠 있었다) |
-| `google-services.json` 반영 | ✅ 통과 | 2026-08-17 새 파일로 클린 빌드, `FirebaseApp` 초기화 성공 |
-| 로그인 화면 진입 | ⛔ 실행 불가 | DB 읽기가 선행되어 콜백이 오지 않음 (2026-08-17 재확인) |
-| 로그인 / 회원가입 | ⛔ 실행 불가 | Realtime Database 인스턴스 비활성 |
-| 퀴즈 · 포인트 · 오답 노트 | ⛔ 실행 불가 | Realtime Database 인스턴스 비활성 |
+| 빌드 (`./gradlew clean assembleDebug`) | ✅ | `app-debug.apk` 생성 |
+| 앱 설치·실행, 스플래시 → 메인 | ✅ | 크래시 없음 |
+| 홈 화면 렌더링 | ✅ | 사용자명·잠금여부·포인트·퀴즈유형 표시 |
+| 비로그인 상태 메뉴 접근 차단 | ✅ | "로그인을 해주시기 바랍니다." 후 전환 차단 |
+| 비로그인 상태 사용자 아이콘 | ✅ | Login 아이콘 |
+| 회원가입 | ✅ | FirebaseAuth UID 발급, `계정 정보/<이메일키>` 생성 |
+| 로그인 | ✅ | 홈에 이름·포인트·퀴즈유형 반영 |
+| 로그아웃 | ✅ | 세션 종료 후 전 탭 크래시 0 |
+| 문제 종류 선택 | ✅ | `ChoiceProblem`, `problem_to_Korean` 기록 |
+| 잠금화면 사용 토글 | ✅ | `lockState` 반영, 서비스 2개 기동 |
+| 잠금화면 퀴즈 표시 | ✅ | 화면 off/on 시 LockScreenActivity 표시, 문제·보기 4개 |
+| 문제 이미지 표시 | ⚠️ | Firebase Storage 는 402. `IMAGE_BASE_URL` 사용 시 ✅ |
+| 정답 채점 + 포인트 적립 | ✅ | 0 → 1000 (1문항 1,000점) |
+| 오답 기록 | ✅ | `오답 목록/<유형>/0`, `오답 개수: 1` |
+| 오답노트 조회 (연도→회차→번호) | ✅ | "2019년 2회 7번 / 정답은 1번 입니다." |
+| 포인트 교환 | ✅ | 1000 → 0 |
+| 잔액 부족 시 교환 차단 | ✅ | 포인트 변동 없음 |
+| 다중 접속 격리 | ✅ | 다른 기기 로그인이 이 기기에 영향 없음 (수정 전에는 유출) |
+| 동시 갱신 유실 | ✅ | 트랜잭션 적용 (수정 전 동시 10회 +1000 → 1000) |
+| 프로필 사진 업로드/표시 | ⛔ | Storage 402 |
 | 자동화 테스트 | ❌ 없음 | 프로젝트에 테스트 소스가 없다 |
+
+### 이번 테스트로 발견해 수정한 결함
+
+| # | 증상 | 원인 |
+|---|------|------|
+| 1 | 로그인해도 계속 비로그인으로 보임 | MVVM 전환 때 현재 사용자 기록 코드 누락 |
+| 2 | 로그인 화면이 즉시 튕겨 나감 | ViewModel 이 기존 세션을 "방금 성공"으로 전달 |
+| 3 | 다른 사용자의 포인트·오답이 보임 | 로그인 사용자를 DB 전역 노드에 저장 |
+| 4 | 동시 갱신 시 포인트 유실 | 읽고-쓰기 방식 (트랜잭션 미사용) |
+| 5 | 로그아웃 후 캐시 탭에서 크래시 | `child(null)` |
+| 6 | 앱 재시작 시 크래시 | 서비스 재기동 시 `intent` 가 null |
+| 7 | 유휴 상태에서 ANR | 비로그인을 오류로 처리 → 무한 재조회 루프 |
+| 8 | 이미지 실패 시 무한 재시도 | 실패 콜백이 자기 자신을 다시 호출 |
+| 9 | 유형별 첫 오답이 기록 안 됨 | 비동기 쓰기 후 같은 스냅샷 재읽기 |
+| 10 | Points 없으면 포인트 미지급 | `NumberFormatException` 만 처리 |
 
 아래 시나리오의 "예상 결과"는 기대값이며 측정값이 아니다.
 
