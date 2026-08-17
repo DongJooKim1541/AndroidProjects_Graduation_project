@@ -20,6 +20,7 @@ import com.example.gc_uiactivity.ui.fragment.HomeFragment;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DataSnapshot;
+import com.example.gc_uiactivity.firebase.DatabaseManager;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -78,7 +79,7 @@ public class ProfileImageUploadFragment extends Fragment {
         curRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                String curMail=(String)dataSnapshot.child("Email").getValue();
+                String curMail = DatabaseManager.currentUserEmailKey();
                 SetImage(curMail);
             }
 

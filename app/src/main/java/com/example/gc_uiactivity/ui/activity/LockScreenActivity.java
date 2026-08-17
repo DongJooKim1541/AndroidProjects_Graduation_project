@@ -21,6 +21,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.gc_uiactivity.R;
 import com.example.gc_uiactivity.firebase.DatabaseManager;
+import com.example.gc_uiactivity.firebase.ImageSource;
 import com.example.gc_uiactivity.viewmodels.LockScreenViewModel;
 import com.example.gc_uiactivity.viewmodels.ViewModelFactory;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -33,6 +34,8 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -52,6 +55,14 @@ public class LockScreenActivity extends AppCompatActivity {
 
     private Random random = new Random();
     private DatabaseManager databaseManager;
+
+    /**
+     * 문제 이미지 내려받기에 실패했을 때 다른 문제로 다시 시도할 수 있는 횟수.
+     * 이전에는 실패할 때마다 무조건 showProblem() 을 다시 불러서, 스토리지가 계속
+     * 실패하면 끝없이 재귀했다(20초에 재로딩 11회, StorageException 504회 관측).
+     */
+    private static final int MAX_IMAGE_RETRIES = 3;
+    private int imageRetryCount = 0;
 
     // ViewModel
     private LockScreenViewModel viewModel;
@@ -190,17 +201,18 @@ public class LockScreenActivity extends AppCompatActivity {
         databaseManager.getUserInfo(email, new DatabaseManager.UserInfoCallback() {
             @Override
             public void onUserInfoReceived(DataSnapshot dataSnapshot) {
-                if (dataSnapshot != null && dataSnapshot.child("ChoiceProblem").getValue() != null) {
-                    if (dataSnapshot.child("problem_to_Korean").getValue() != null) {
-                        final String problem = dataSnapshot.child("ChoiceProblem").getValue().toString();
-                        final String problemToKorean = dataSnapshot.child("problem_to_Korean").getValue().toString();
+                final String problem = DatabaseManager.stringOf(dataSnapshot, "ChoiceProblem");
+                final String problemToKorean = DatabaseManager.stringOf(dataSnapshot, "problem_to_Korean");
 
-                        Log.d("KDJ", "problem:" + problem);
-                        loadProblemYears(email, problem, problemToKorean);
-                    }
-                } else {
+                // 이전에는 ChoiceProblem 은 있는데 problem_to_Korean 이 없으면 안내도 없이
+                // 아무 일도 일어나지 않았다. 둘 중 하나라도 없으면 설정하라고 알린다.
+                if (problem == null || problemToKorean == null) {
                     Toast.makeText(LockScreenActivity.this, "문제 설정을 하지 않음.", Toast.LENGTH_SHORT).show();
+                    return;
                 }
+
+                Log.d("KDJ", "problem:" + problem);
+                loadProblemYears(email, problem, problemToKorean);
             }
         });
     }
@@ -265,15 +277,25 @@ public class LockScreenActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 if (dataSnapshot.getChildrenCount() > 0) {
-                    final String randImagePath = Integer.toString(
-                        random.nextInt((int) dataSnapshot.getChildrenCount()) + 1);
+                    // 실제 자식 키 중에서 고른다. 이전에는 키가 1..N 으로 이어져 있다고
+                    // 가정하고 인덱스를 만들어서, 키가 다르면 null 로 NPE 가 났다.
+                    List<String> keys = new ArrayList<>();
+                    for (DataSnapshot child : dataSnapshot.getChildren()) {
+                        keys.add(child.getKey());
+                    }
+                    final String randImagePath = keys.get(random.nextInt(keys.size()));
                     Log.d("KDJ", "randImagePath: " + randImagePath);
+
+                    // Get correct answer
+                    final String correctAnswer = DatabaseManager.stringOf(dataSnapshot, randImagePath);
+                    if (correctAnswer == null) {
+                        Log.e("KDJ", "정답이 비어 있는 문제: " + randImagePath);
+                        return;
+                    }
 
                     // Load image from storage
                     loadImageFromStorage(problem, year, episode, randImagePath);
 
-                    // Get correct answer
-                    final String correctAnswer = dataSnapshot.child(randImagePath).getValue().toString();
                     setupAnswerListener(email, problem, year, episode, randImagePath, correctAnswer, problemToKorean);
                 }
             }
@@ -289,22 +311,28 @@ public class LockScreenActivity extends AppCompatActivity {
      * Load image from Firebase Storage
      */
     private void loadImageFromStorage(String problem, String year, String episode, String number) {
-        FirebaseStorage storage = FirebaseStorage.getInstance();
-        StorageReference storageRef = storage.getReferenceFromUrl("gs://charged-dialect-285301.appspot.com/");
-        StorageReference pathReference = storageRef.child("images/" + problem + "/" + year + "/" + episode + "/" + number + ".jpeg");
-
-        final long ONE_MEGABYTE = 1024 * 1024;
-        pathReference.getBytes(ONE_MEGABYTE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
+        ImageSource.load(ImageSource.problemPath(problem, year, episode, number), new ImageSource.Callback() {
             @Override
-            public void onSuccess(byte[] bytes) {
-                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+            public void onLoaded(Bitmap bitmap) {
+                imageRetryCount = 0;
                 ivProblemImage.setImageBitmap(bitmap);
             }
-        }).addOnFailureListener(new OnFailureListener() {
+
             @Override
-            public void onFailure(@NonNull Exception exception) {
-                Toast.makeText(LockScreenActivity.this, "다운로드 실패.", Toast.LENGTH_SHORT).show();
-                showProblem();
+            public void onFailed(Exception error) {
+                // 다른 문제로 몇 번만 다시 시도한다. 무제한으로 다시 부르면
+                // 이미지 서버가 계속 실패할 때 재귀가 끝나지 않는다.
+                if (imageRetryCount < MAX_IMAGE_RETRIES) {
+                    imageRetryCount++;
+                    Toast.makeText(LockScreenActivity.this, "다운로드 실패. 다른 문제를 불러옵니다.",
+                            Toast.LENGTH_SHORT).show();
+                    showProblem();
+                } else {
+                    imageRetryCount = 0;
+                    Toast.makeText(LockScreenActivity.this,
+                            "문제 이미지를 불러올 수 없습니다. 네트워크와 이미지 저장소 설정을 확인하세요.",
+                            Toast.LENGTH_LONG).show();
+                }
             }
         });
     }

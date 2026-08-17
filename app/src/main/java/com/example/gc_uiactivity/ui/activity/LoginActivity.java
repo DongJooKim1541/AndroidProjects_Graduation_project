@@ -13,6 +13,7 @@ import android.widget.Toast;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.gc_uiactivity.R;
+import com.example.gc_uiactivity.firebase.DatabaseManager;
 import com.example.gc_uiactivity.viewmodels.AuthViewModel;
 import com.example.gc_uiactivity.viewmodels.ViewModelFactory;
 import com.google.firebase.auth.FirebaseUser;
@@ -127,7 +128,20 @@ public class LoginActivity extends AppCompatActivity {
      * Handle successful login
      */
     private void handleLoginSuccess(FirebaseUser user) {
-        String email = editTextEmail.getText().toString();
+        // 입력창이 아니라 인증된 사용자에서 이메일을 가져온다. 입력창을 쓰면 이 콜백이
+        // 사용자의 타이핑 없이 불릴 때 빈 값이 저장된다.
+        String email = user.getEmail();
+        if (email == null || email.isEmpty()) {
+            email = editTextEmail.getText().toString();
+        }
+        if (email.isEmpty()) {
+            Toast.makeText(this, "이메일을 확인할 수 없습니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 앱 전체가 로그인 여부를 "현재 상태/계정 정보/Email" 로 판단한다.
+        // 이 기록이 없으면 인증에 성공해도 계속 비로그인으로 보인다.
+        new DatabaseManager().setCurrentUserEmail(email);
 
         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
         intent.putExtra("Email", email);

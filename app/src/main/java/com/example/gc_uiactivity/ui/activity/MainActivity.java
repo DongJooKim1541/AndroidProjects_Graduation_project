@@ -94,7 +94,8 @@ public class MainActivity extends AppCompatActivity {
         viewModel.getErrorMessage().observe(this, error -> {
             if (error != null && !error.isEmpty()) {
                 Toast.makeText(MainActivity.this, error, Toast.LENGTH_SHORT).show();
-                viewModel.refreshUserEmail();
+                // 여기서 다시 조회를 부르면 실패가 또 에러를 세팅해 무한히 반복된다.
+                viewModel.clearErrorMessage();
             }
         });
 

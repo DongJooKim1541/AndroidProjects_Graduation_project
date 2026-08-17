@@ -18,9 +18,12 @@ import androidx.fragment.app.Fragment;
 import com.example.gc_uiactivity.R;
 import com.example.gc_uiactivity.ui.fragment.HomeFragment;
 import com.google.firebase.database.DataSnapshot;
+import com.example.gc_uiactivity.firebase.DatabaseManager;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.MutableData;
+import com.google.firebase.database.Transaction;
 import com.google.firebase.database.ValueEventListener;
 
 public class CashFragment extends Fragment {
@@ -56,7 +59,12 @@ public class CashFragment extends Fragment {
         currMembers.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                final String email=(String)dataSnapshot.child("Email").getValue();
+                final String email = DatabaseManager.currentUserEmailKey();
+                if (email == null) {
+                    // 로그아웃 상태에서는 child(null) 이 되어 앱이 죽었다.
+                    tv_currentpoint.setText("로그인이 필요합니다");
+                    return;
+                }
                 stateInfoRef.addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -213,18 +221,40 @@ public class CashFragment extends Fragment {
         currMembers.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                String email=(String)dataSnapshot.child("Email").getValue();
+                String email = DatabaseManager.currentUserEmailKey();
                 android.util.Log.d("KDJ","cash_email: "+email);
+                if (email == null) {
+                    return;
+                }
                 final DatabaseReference memberPointRef=stateInfoRef.child(email).child("Points");
-                memberPointRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                // 차감도 트랜잭션으로 한다. 읽고 나서 쓰면 동시에 두 번 교환할 때
+                // 한 번만 차감되어 포인트를 공짜로 쓸 수 있다. 잔액도 여기서 다시 본다.
+                memberPointRef.runTransaction(new Transaction.Handler() {
+                    @NonNull
                     @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                        memberPointRef.setValue(Integer.toString(Integer.parseInt(dataSnapshot.getValue().toString())-points));
+                    public Transaction.Result doTransaction(@NonNull MutableData currentData) {
+                        Object raw = currentData.getValue();
+                        int current;
+                        try {
+                            current = raw == null ? 0 : Integer.parseInt(raw.toString().trim());
+                        } catch (NumberFormatException e) {
+                            current = 0;
+                        }
+                        if (current < points) {
+                            // 잔액이 모자라면 아무것도 바꾸지 않는다.
+                            return Transaction.abort();
+                        }
+                        currentData.setValue(Integer.toString(current - points));
+                        return Transaction.success(currentData);
                     }
 
                     @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
+                    public void onComplete(DatabaseError error, boolean committed, DataSnapshot snapshot) {
+                        if (error != null) {
+                            android.util.Log.e("KDJ", "포인트 차감 실패", error.toException());
+                        } else if (!committed) {
+                            Toast.makeText(getActivity(), "잔액이 부족합니다.", Toast.LENGTH_SHORT).show();
+                        }
                     }
                 });
             }

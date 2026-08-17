@@ -26,6 +26,9 @@ import com.example.gc_uiactivity.viewmodels.ViewModelFactory;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DataSnapshot;
+import com.example.gc_uiactivity.firebase.DatabaseManager;
+import com.example.gc_uiactivity.firebase.ImageSource;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -199,7 +202,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         currMembers.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                final String email = (String) dataSnapshot.child("Email").getValue();
+                final String email = DatabaseManager.currentUserEmailKey();
                 stateInfoRef.addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -244,25 +247,20 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         currMembers.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                String email = (String) dataSnapshot.child("Email").getValue();
+                String email = DatabaseManager.currentUserEmailKey();
                 Log.d("KDJ", "email:" + email);
                 if (email != null) {
                     String[] userInfo = email.split("@");
-                    FirebaseStorage storage = FirebaseStorage.getInstance();
-                    StorageReference storageRef = storage.getReferenceFromUrl("gs://charged-dialect-285301.appspot.com/");
-                    StorageReference pathReference = storageRef.child("images/users/" + userInfo[0]);
-
-                    final long ONE_MEGABYTE = 1024 * 1024;
-                    pathReference.getBytes(ONE_MEGABYTE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
+                    ImageSource.load(ImageSource.profilePath(userInfo[0]), new ImageSource.Callback() {
                         @Override
-                        public void onSuccess(byte[] bytes) {
-                            Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                        public void onLoaded(Bitmap bitmap) {
                             ivUserImage.setImageBitmap(bitmap);
                         }
-                    }).addOnFailureListener(new OnFailureListener() {
+
                         @Override
-                        public void onFailure(@NonNull Exception exception) {
-                            Log.e("KDJ", "Failed to download user image", exception);
+                        public void onFailed(Exception error) {
+                            // 프로필 사진이 없거나 저장소를 쓸 수 없는 경우. 기본 아이콘을 유지한다.
+                            Log.e("KDJ", "Failed to download user image", error);
                         }
                     });
                 } else {
@@ -285,59 +283,24 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         // Firebase 조회가 실패하거나 응답이 늦으면 이 값이 그대로 남는다.
         ivUserState.setImageResource(R.drawable.login_icon);
 
-        FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
-        DatabaseReference rootRef = firebaseDatabase.getReference();
-        DatabaseReference currRef = rootRef.child("현재 상태");
-        DatabaseReference currMembers = currRef.child("계정 정보");
-
-        currMembers.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                String email = (String) dataSnapshot.child("Email").getValue();
-                boolean loggedIn = email != null;
-                ivUserState.setImageResource(
-                        loggedIn ? R.drawable.logout_icon : R.drawable.login_icon);
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-                // 조회 실패는 로그인 상태를 확인하지 못한 것이므로 로그인 아이콘을 유지한다.
-                Log.e(TAG, "Error loading user state", databaseError.toException());
-                ivUserState.setImageResource(R.drawable.login_icon);
-            }
-        });
+        // 로그인 여부는 이 기기의 FirebaseAuth 세션으로 판단한다. DB 를 거치지 않으므로
+        // 다른 기기의 로그인/로그아웃이 이 화면에 영향을 주지 않는다.
+        boolean loggedIn = DatabaseManager.currentUserEmailKey() != null;
+        ivUserState.setImageResource(loggedIn ? R.drawable.logout_icon : R.drawable.login_icon);
     }
 
     /**
      * Handle user state button click (login/logout)
      */
     private void handleUserStateClick() {
-        FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
-        DatabaseReference rootRef = firebaseDatabase.getReference();
-        DatabaseReference currRef = rootRef.child("현재 상태");
-        DatabaseReference currMembers = currRef.child("계정 정보");
-
-        currMembers.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                String email = (String) dataSnapshot.child("Email").getValue();
-                if (email != null) {
-                    // Logout
-                    clearUserDisplay();
-                    changeEmail();
-                } else {
-                    // Navigate to login
-                    Intent intent = new Intent(getActivity(), LoginActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-                Log.e("KDJ", "Error handling user state click", databaseError.toException());
-            }
-        });
+        if (DatabaseManager.currentUserEmailKey() != null) {
+            clearUserDisplay();
+            changeEmail();
+        } else {
+            Intent intent = new Intent(getActivity(), LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+        }
     }
 
     /**
@@ -356,10 +319,9 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
      * Clear email from Firebase (logout)
      */
     private void changeEmail() {
-        FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
-        DatabaseReference rootRef = firebaseDatabase.getReference();
-        DatabaseReference currRef = rootRef.child("현재 상태");
-        DatabaseReference currMembers = currRef.child("계정 정보");
-        currMembers.child("Email").setValue(null);
+        // 이 기기의 세션을 끊는 것이 로그아웃이다. 예전에는 DB 전역 노드만 지워서,
+        // 다른 기기까지 함께 로그아웃되고 이 기기의 인증 세션은 남아 있었다.
+        FirebaseAuth.getInstance().signOut();
+        new DatabaseManager().clearCurrentUserEmail();
     }
 }

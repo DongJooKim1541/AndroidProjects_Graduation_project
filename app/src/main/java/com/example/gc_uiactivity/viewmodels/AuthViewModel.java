@@ -25,7 +25,10 @@ public class AuthViewModel extends ViewModel {
     public AuthViewModel() {
         firebaseAuth = FirebaseAuth.getInstance();
         databaseReference = FirebaseDatabase.getInstance().getReference();
-        currentUserLiveData.setValue(firebaseAuth.getCurrentUser());
+        // 여기서 기존 세션을 넣으면 안 된다. LoginActivity 는 이 LiveData 가 채워지는 것을
+        // "방금 로그인에 성공했다"로 해석하므로, 앱을 다시 켰을 때 로그인 화면에 들어서자마자
+        // 입력값이 빈 채로 성공 처리가 돌아 화면이 튕겨 나간다.
+        // 기존 세션이 필요하면 isUserLoggedIn() 을 쓴다.
     }
 
     /**
@@ -62,17 +65,17 @@ public class AuthViewModel extends ViewModel {
                         FirebaseUser user = firebaseAuth.getCurrentUser();
                         currentUserLiveData.setValue(user);
 
-                        // Save user info to database
+                        // 계정 레코드는 앱의 다른 화면들이 읽는 것과 같은 위치·같은 필드명으로
+                        // 저장해야 한다. 이전에는 users/<uid>/{email,userName,points} 라는
+                        // 별도 스키마로 써서 어느 화면도 읽지 못했다.
                         if (user != null) {
-                            String userId = user.getUid();
-                            String emailFormatted = email.replaceAll("[.]", "");
-
-                            databaseReference.child("users").child(userId)
-                                    .child("email").setValue(emailFormatted);
-                            databaseReference.child("users").child(userId)
-                                    .child("userName").setValue(userName);
-                            databaseReference.child("users").child(userId)
-                                    .child("points").setValue(0);
+                            String emailKey = email.replaceAll("[.]", "");
+                            DatabaseReference member = databaseReference
+                                    .child("계정 정보").child(emailKey);
+                            member.child("Email").setValue(email);
+                            member.child("name").setValue(userName);
+                            member.child("Points").setValue("0");
+                            member.child("lockState").setValue("false");
                         }
                         errorMessageLiveData.setValue(null);
                     } else {

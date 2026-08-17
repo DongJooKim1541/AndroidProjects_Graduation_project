@@ -1,6 +1,17 @@
 apply plugin: 'com.android.application'
 apply plugin: 'com.google.gms.google-services'
 
+// 문제·프로필 이미지를 Firebase Storage 대신 다른 HTTP 호스트에서 받고 싶을 때 쓴다.
+// 무료(Spark) 요금제에서는 Cloud Storage 접근이 HTTP 402 로 막히기 때문이다.
+// local.properties 또는 환경변수로 지정한다. 비워 두면 Firebase Storage 를 쓴다.
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { localProperties.load(it) }
+}
+def imageBaseUrl = localProperties.getProperty('IMAGE_BASE_URL')
+        ?: System.getenv('IMAGE_BASE_URL') ?: ''
+
 android {
     namespace 'com.example.gc_uiactivity'
     compileSdk 33
@@ -12,6 +23,8 @@ android {
         targetSdkVersion 29
         versionCode 1
         versionName "1.0"
+
+        buildConfigField "String", "IMAGE_BASE_URL", "\"${imageBaseUrl}\""
     }
 
     buildTypes {

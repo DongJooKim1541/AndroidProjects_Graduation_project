@@ -35,11 +35,15 @@ public class ShowForegroundService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if("startForeground".equals(intent.getAction())){
-            startForegroundService();
-        }
-        if("stopForeground".equals(intent.getAction())){
+        // START_STICKY 로 되살아날 때 시스템은 intent 를 null 로 넘긴다.
+        // 그대로 getAction() 을 부르면 앱이 죽는다(앱을 강제 종료한 뒤 다시 켜면 재현).
+        String action = intent == null ? null : intent.getAction();
+
+        if ("stopForeground".equals(action)) {
             stopForgroundService();
+        } else {
+            // action 이 없으면(재시작 포함) 알림을 다시 띄워 포그라운드 상태를 유지한다.
+            startForegroundService();
         }
         return START_STICKY;
     }

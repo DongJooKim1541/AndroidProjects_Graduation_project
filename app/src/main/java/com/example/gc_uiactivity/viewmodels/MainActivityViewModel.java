@@ -36,13 +36,20 @@ public class MainActivityViewModel extends ViewModel {
             @Override
             public void onEmailReceived(String email) {
                 isLoadingLiveData.setValue(false);
-                if (email != null) {
-                    currentUserEmailLiveData.setValue(email);
-                } else {
-                    errorMessageLiveData.setValue("Failed to load user email");
-                }
+                // 로그인하지 않은 것은 오류가 아니다. 예전에는 여기서 에러를 세팅했고,
+                // MainActivity 의 에러 옵저버가 다시 조회를 부르면서 무한 루프가 돌았다.
+                // (조회가 DB 왕복이라 느렸을 때는 눈에 띄지 않았지만, 로컬 조회로
+                //  바뀌자 초당 수십 번 Toast 를 띄워 앱이 ANR 로 멈췄다.)
+                currentUserEmailLiveData.setValue(email);
             }
         });
+    }
+
+    /**
+     * 에러 메시지를 한 번 표시한 뒤 지운다.
+     */
+    public void clearErrorMessage() {
+        errorMessageLiveData.setValue(null);
     }
 
     /**

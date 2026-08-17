@@ -23,6 +23,8 @@ import com.example.gc_uiactivity.ui.fragment.HomeFragment;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DataSnapshot;
+import com.example.gc_uiactivity.firebase.DatabaseManager;
+import com.example.gc_uiactivity.firebase.ImageSource;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -113,11 +115,15 @@ public class AnswerNoteEndFragment extends Fragment {
         curRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                final String curEmail=dataSnapshot.child("Email").getValue().toString();
-                String curChoiceProblems=dataSnapshot.child("curChoiceProblems").getValue().toString();
-                final String curYear=dataSnapshot.child("curYear").getValue().toString();
-                final String curRound=dataSnapshot.child("curRound").getValue().toString();
-                final String curNum=dataSnapshot.child("curNum").getValue().toString();
+                final String curEmail = DatabaseManager.currentUserEmailKey();
+                if (curEmail == null) {
+                    // 로그아웃 상태에서 child(null) 로 죽지 않도록 여기서 멈춘다.
+                    return;
+                }
+                String curChoiceProblems = DatabaseManager.stringOf(dataSnapshot, "curChoiceProblems");
+                final String curYear = DatabaseManager.stringOf(dataSnapshot, "curYear");
+                final String curRound = DatabaseManager.stringOf(dataSnapshot, "curRound");
+                final String curNum = DatabaseManager.stringOf(dataSnapshot, "curNum");
                 showNote(curEmail,curChoiceProblems,curYear,curRound,curNum);
             }
 
@@ -145,27 +151,20 @@ public class AnswerNoteEndFragment extends Fragment {
 
                 tv_problem.setText(year+" "+round+" "+num);
 
-                FirebaseStorage storage = FirebaseStorage.getInstance();
-                StorageReference storageRef = storage.getReferenceFromUrl("gs://charged-dialect-285301.appspot.com/");
                 final String[] itemYear=year.split("년");
                 final String[] itemEpisode=round.split("회");
                 final String[] itemNumber=num.split("번");
-                StorageReference pathReference = storageRef.child("images/"+curProblem+"/"+itemYear[0]+"/"+itemEpisode[0]+"/"+itemNumber[0]+".jpeg");
-                Log.d("KDJ", "imagepath: " + "images/"+curProblem+"/"+itemYear[0]+"/"+itemEpisode[0]+"/"+itemNumber[0]+".jpeg");
-                Log.d("KDJ", "pathReference: " + pathReference);
+                String imagePath = ImageSource.problemPath(curProblem, itemYear[0], itemEpisode[0], itemNumber[0]);
+                Log.d("KDJ", "imagepath: " + imagePath);
 
-                final long ONE_MEGABYTE = 1024 * 1024;
-                pathReference.getBytes(ONE_MEGABYTE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
+                ImageSource.load(imagePath, new ImageSource.Callback() {
                     @Override
-                    public void onSuccess(byte[] bytes) {
-                        // Data for "images/island.jpg" is returns, use this as needed
-                        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                    public void onLoaded(Bitmap bitmap) {
                         imv_problemImg.setImageBitmap(bitmap);
                     }
-                }).addOnFailureListener(new OnFailureListener() {
+
                     @Override
-                    public void onFailure(@NonNull Exception exception) {
-                        // Handle any errors
+                    public void onFailed(Exception error) {
                         Toast.makeText(getActivity(), "다운로드 실패.", Toast.LENGTH_SHORT).show();
                     }
                 });

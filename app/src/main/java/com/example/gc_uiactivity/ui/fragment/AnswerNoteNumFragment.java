@@ -19,6 +19,7 @@ import androidx.fragment.app.Fragment;
 import com.example.gc_uiactivity.R;
 import com.example.gc_uiactivity.ui.fragment.HomeFragment;
 import com.google.firebase.database.DataSnapshot;
+import com.example.gc_uiactivity.firebase.DatabaseManager;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -80,10 +81,14 @@ public class AnswerNoteNumFragment extends Fragment {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                final String curEmail=dataSnapshot.child("Email").getValue().toString();
-                String curChoiceProblems=dataSnapshot.child("curChoiceProblems").getValue().toString();
-                final String curYear=dataSnapshot.child("curYear").getValue().toString();
-                final String curRound=dataSnapshot.child("curRound").getValue().toString();
+                final String curEmail = DatabaseManager.currentUserEmailKey();
+                if (curEmail == null) {
+                    // 로그아웃 상태에서 child(null) 로 죽지 않도록 여기서 멈춘다.
+                    return;
+                }
+                String curChoiceProblems = DatabaseManager.stringOf(dataSnapshot, "curChoiceProblems");
+                final String curYear = DatabaseManager.stringOf(dataSnapshot, "curYear");
+                final String curRound = DatabaseManager.stringOf(dataSnapshot, "curRound");
 
                 //파이어베이스 실시간 dB관리 객체 열어오기.
                 final FirebaseDatabase firebaseDatabase=FirebaseDatabase.getInstance();

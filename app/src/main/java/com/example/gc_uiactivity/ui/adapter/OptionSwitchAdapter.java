@@ -20,6 +20,7 @@ import androidx.annotation.NonNull;
 
 import com.example.gc_uiactivity.R;
 import com.google.firebase.database.DataSnapshot;
+import com.example.gc_uiactivity.firebase.DatabaseManager;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -76,7 +77,11 @@ public class OptionSwitchAdapter extends ArrayAdapter<String> {
         currMembers.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                final String email=(String)dataSnapshot.child("Email").getValue();
+                final String email = DatabaseManager.currentUserEmailKey();
+                if (email == null) {
+                    // 로그아웃 상태. child(null) 은 즉시 예외라 여기서 멈춘다.
+                    return;
+                }
 
                 stateInfoRef.addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
@@ -110,8 +115,10 @@ public class OptionSwitchAdapter extends ArrayAdapter<String> {
                 currMembers.addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                        final String email=(String)dataSnapshot.child("Email").getValue();
-                        //stateInfoRef.child(email).child("lockState").setValue("");
+                        final String email = DatabaseManager.currentUserEmailKey();
+                        if (email == null) {
+                            return;
+                        }
 
                         stateInfoRef.addListenerForSingleValueEvent(new ValueEventListener() {
                             @Override
@@ -191,7 +198,10 @@ public class OptionSwitchAdapter extends ArrayAdapter<String> {
         currMembers.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                final String email = (String) dataSnapshot.child("Email").getValue();
+                final String email = DatabaseManager.currentUserEmailKey();
+                if (email == null) {
+                    return;
+                }
                 stateInfoRef.child(email).child("lockState").setValue(ischecked);
                 Log.d("KDJ", "stateInfoRef.child(email).child(lockState):" + ischecked);
             }
