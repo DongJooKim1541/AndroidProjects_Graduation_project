@@ -16,12 +16,32 @@ W PersistentConnection: Firebase Database connection was forcefully killed by th
   Will not attempt reconnect. Reason: The Firebase database 'charged-dialect-285301' has been deactivated.
 ```
 
-**2020년에 쓰던 Firebase 프로젝트가 비활성화되어 있다.** 로그인·퀴즈·포인트·오답 노트는
-모두 이 백엔드에 의존하므로, 코드와 무관하게 동작하지 않는다.
-아래 Firebase 의존 항목들은 **결함이 아니라 실행 불가**다.
+**2020년에 쓰던 Firebase 프로젝트의 Realtime Database 인스턴스가 비활성 상태다.**
+로그인·퀴즈·포인트·오답 노트는 모두 이 백엔드에 의존하므로, 코드와 무관하게
+동작하지 않는다. 아래 Firebase 의존 항목들은 **결함이 아니라 실행 불가**다.
 
-되살리려면 Firebase 콘솔에서 프로젝트를 다시 활성화하거나 새로 만들고,
-새 `app/google-services.json`을 넣은 뒤 재빌드해야 한다.
+#### 재검증 (2026-08-17) — 설정 파일을 새로 받아도 해결되지 않는다
+
+Firebase 콘솔에서 `google-services.json`을 새로 내려받아 `app/`에 넣고 클린 빌드했다.
+
+| 확인 | 결과 |
+|------|------|
+| `processDebugGoogleServices` 가 새 파일을 소비 | ✅ `google_app_id` = `1:1052677891901:android:318ef2e7114dc7e1af8754` (`com.example.gc_uiactivity`) |
+| `FirebaseApp` 초기화 | ✅ `FirebaseInitProvider: FirebaseApp initialization successful` |
+| Realtime Database 연결 | ⛔ 위 `has been deactivated` 로그 그대로 재현 |
+
+즉 **설정 파일이나 API 키의 문제가 아니다.** 서버 쪽 Realtime Database 인스턴스가
+비활성이라 연결이 즉시 끊긴다. 콘솔에서 인스턴스를 다시 켜거나 새로 만들어야 한다.
+새로 만들면 `firebase_url`이 바뀌므로 `google-services.json`을 **다시** 받아야 한다.
+
+#### 파급: 로그인 화면 자체에 도달할 수 없다
+
+`HomeFragment.handleUserStateClick()`이 로그인 화면으로 보내기 전에
+`현재 상태/계정 정보`를 먼저 읽는다. DB가 죽어 있으면 `onDataChange` 도
+`onCancelled` 도 호출되지 않아 **버튼을 눌러도 아무 일이 일어나지 않는다**
+(크래시는 없다. `FATAL EXCEPTION` 0건).
+
+따라서 DB가 살아나기 전에는 Firebase 의존 TC를 한 건도 실행할 수 없다.
 
 ### 실행 결과
 
@@ -33,8 +53,10 @@ W PersistentConnection: Firebase Database connection was forcefully killed by th
 | 홈 화면 렌더링 | ✅ 통과 | 사용자명·잠금 여부·포인트·퀴즈 유형 영역 표시 |
 | 비로그인 상태 메뉴 접근 차단 | ✅ 통과 | 홈 외 메뉴 탭 시 "로그인을 해주시기 바랍니다." 안내 후 전환 차단 |
 | 비로그인 상태 사용자 아이콘 | ✅ 통과 | Login 아이콘 표시 (수정 전에는 Logout 아이콘이 떠 있었다) |
-| 로그인 / 회원가입 | ⛔ 실행 불가 | Firebase 프로젝트 비활성 |
-| 퀴즈 · 포인트 · 오답 노트 | ⛔ 실행 불가 | Firebase 프로젝트 비활성 |
+| `google-services.json` 반영 | ✅ 통과 | 2026-08-17 새 파일로 클린 빌드, `FirebaseApp` 초기화 성공 |
+| 로그인 화면 진입 | ⛔ 실행 불가 | DB 읽기가 선행되어 콜백이 오지 않음 (2026-08-17 재확인) |
+| 로그인 / 회원가입 | ⛔ 실행 불가 | Realtime Database 인스턴스 비활성 |
+| 퀴즈 · 포인트 · 오답 노트 | ⛔ 실행 불가 | Realtime Database 인스턴스 비활성 |
 | 자동화 테스트 | ❌ 없음 | 프로젝트에 테스트 소스가 없다 |
 
 아래 시나리오의 "예상 결과"는 기대값이며 측정값이 아니다.
