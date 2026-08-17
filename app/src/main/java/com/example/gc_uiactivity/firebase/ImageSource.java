@@ -24,6 +24,11 @@ import java.util.concurrent.Executors;
  * 같은 경로 구조를 가진 임의의 HTTP 호스트에서 대신 내려받는다. Blaze 로 올리지 않고도
  * 이미지를 다른 곳에 올려 앱을 그대로 쓸 수 있다.
  *
+ * <p><b>폴백이 아니라 택일이다.</b> {@code IMAGE_BASE_URL} 이 지정되어 있으면 Storage 를
+ * 아예 호출하지 않고, 비어 있으면 HTTP 를 시도하지 않는다. 한쪽이 실패했을 때 다른 쪽으로
+ * 넘어가지 않는다 — Spark 요금제에서는 Storage 가 항상 실패하므로, 폴백으로 만들면 이미지
+ * 한 장마다 402 왕복을 먼저 치르게 되어 문제가 뜰 때마다 지연이 붙는다.
+ *
  * 설정 방법 (둘 중 하나):
  *   local.properties 에  IMAGE_BASE_URL=https://example.com/quiz
  *   환경변수로          IMAGE_BASE_URL=https://example.com/quiz

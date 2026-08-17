@@ -55,6 +55,35 @@
 sdk.dir=C:/Users/<사용자>/AppData/Local/Android/Sdk
 ```
 
+### 문제 이미지 위치 (선택)
+
+문제 이미지와 프로필 사진은 앱에 포함되어 있지 않고 서버에서 내려받습니다.
+기본 저장소는 Firebase Cloud Storage입니다.
+
+**다만 2024년 9월 정책 변경으로 무료(Spark) 요금제에서는 Cloud Storage 접근이
+HTTP 402로 거부됩니다.** 유료(Blaze)로 올리지 않고 이미지를 다른 곳에 두려면
+`local.properties` 또는 환경변수로 `IMAGE_BASE_URL`을 지정하세요.
+
+```properties
+IMAGE_BASE_URL=https://your-host.example.com
+```
+
+경로 규칙은 Cloud Storage와 같습니다.
+
+```
+{IMAGE_BASE_URL}/images/{문제종류}/{년}/{회}/{번호}.jpeg   예) .../images/rb_IPE/2019/1/9.jpeg
+{IMAGE_BASE_URL}/images/users/{이메일키}                    프로필 사진
+```
+
+**두 저장소를 함께 쓰지는 않습니다.** `IMAGE_BASE_URL`이 지정되어 있으면 이미지를
+전부 그 주소에서만 받고 Cloud Storage는 아예 호출하지 않습니다. 비워 두면 반대로
+Cloud Storage만 사용합니다. 한쪽이 실패했을 때 다른 쪽으로 넘어가는 폴백 동작은
+없습니다(Spark 요금제에서는 Cloud Storage가 항상 실패하므로, 폴백으로 만들면
+이미지마다 402 왕복을 먼저 치르게 되어 느려집니다).
+
+> `https`를 권장합니다. 평문 `http`는 `res/xml/network_security_config.xml`에 등록된
+> 개발용 주소(`10.0.2.2`, `localhost`, `127.0.0.1`)에서만 허용됩니다.
+
 ### 실행
 
 ```bash

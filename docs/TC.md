@@ -37,6 +37,11 @@ Firebase projects that are on the no-cost Spark pricing plan."}}
 이미지를 받는다. 로컬 HTTP 서버로 실제 잠금화면에 이미지가 표시되는 것과
 `StorageException` 이 0 건이 되는 것을 확인했다.
 
+**폴백이 아니라 택일이다.** `IMAGE_BASE_URL` 이 지정되어 있으면 Cloud Storage 를
+아예 호출하지 않고, 비어 있으면 반대로 HTTP 를 시도하지 않는다. 한쪽 실패 시
+다른 쪽으로 넘어가는 동작은 없다 — Spark 요금제에서는 Cloud Storage 가 항상
+실패하므로 폴백으로 만들면 이미지마다 402 왕복을 먼저 치르게 된다.
+
 ### 실행 결과
 
 | 항목 | 상태 | 근거 |
