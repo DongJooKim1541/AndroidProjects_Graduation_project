@@ -65,7 +65,7 @@ Firebase projects that are on the no-cost Spark pricing plan."}}
 | 잔액 부족 시 교환 차단 | ✅ | 포인트 변동 없음 |
 | 다중 접속 격리 | ✅ | 다른 기기 로그인이 이 기기에 영향 없음 (수정 전에는 유출) |
 | 동시 갱신 유실 | ✅ | 트랜잭션 적용 (수정 전 동시 10회 +1000 → 1000) |
-| 프로필 사진 업로드/표시 | ⛔ | Storage 402 |
+| 프로필 사진 업로드/표시 | ⛔ | Storage 402. 실패 원인 안내는 TC-IMG-001 에서 확인 |
 | 자동화 테스트 | ❌ 없음 | 프로젝트에 테스트 소스가 없다 |
 
 ### 이번 테스트로 발견해 수정한 결함
@@ -98,10 +98,55 @@ for k in rb_IPE rb_IPIE rb_IPT; do curl -s "$DB/$P/$k/Year.json?shallow=true"; e
 연도·회차·번호 세 단계 모두 실제 자식 키에서 고르도록(`randomKeyOf`) 바꿨다.
 자세한 내용은 [SDD 9.6](SDD.md#96-문제-출제-키-선택-수정됨).
 
-**아직 구현되지 않은 기능**(포인트 상점 지급, 오답 다시 풀기, 재부팅 후 잠금화면
-복구 등)은 결함이 아니라 미완성 범위다. [README](../README.md#구현되지-않은-기능) 참고.
+**아직 구현되지 않은 기능**(홈 화면의 "준비중" 버튼들, 포인트 상점의 상품 지급,
+오답 다시 풀기)은 결함이 아니라 미완성 범위다.
+[README](../README.md#구현되지-않은-기능) 참고.
 
-아래 시나리오의 "예상 결과"는 기대값이며 측정값이 아니다.
+### ✅ 잠금화면 권한·수명 검증 (2026-08-22)
+
+Android 11(API 30) 에뮬레이터. API 30 은 백그라운드 액티비티 시작이 제한되는
+버전이라 `SYSTEM_ALERT_WINDOW` 검증에 적합하다. 아래는 모두 **실측값**이다.
+
+| # | 시나리오 | 조건 | 실측 결과 |
+|---|----------|------|-----------|
+| TC-LOCK-001 | 권한 선언 확인 | `dumpsys package` | `SYSTEM_ALERT_WINDOW`, `RECEIVE_BOOT_COMPLETED` 선언됨 (후자 `granted=true`) |
+| TC-LOCK-002 | 부팅 리시버 등록 | `dumpsys package` Receiver Resolver Table | `BootReceiver` 가 `BOOT_COMPLETED` 로 등록됨 |
+| TC-LOCK-003 | 권한 없이 스위치 ON | appop `default` | 안내 토스트 → `Settings$OverlaySettingsActivity` 로 이동, 스위치 `checked=false` 로 복귀, `ScreenService` 미실행(0건) |
+| TC-LOCK-004 | 권한 허용 후 스위치 ON | appop `allow` | 스위치 `checked=true`, `ScreenService`·`ShowForegroundService` 실행, DB `lockState="true"` |
+| TC-LOCK-005 | 재부팅 후 상태 | TC-LOCK-004 상태에서 `adb reboot` | 로그 `부팅 완료를 받았다` → `재부팅 감지: 잠금화면 설정을 미사용으로 되돌렸다`, DB `lockState="false"`, 서비스 0건 |
+| TC-LOCK-006 | 재부팅 후 화면 표시 | 앱 재실행 | 홈 `미사용`, 설정 스위치 `checked=false`, 로그인 상태는 유지 |
+
+```
+# TC-LOCK-005 실측
+재부팅 전 lockState: "true"
+I BootReceiver: 부팅 완료를 받았다
+I BootReceiver: 재부팅 감지: 잠금화면 설정을 미사용으로 되돌렸다
+재부팅 후 lockState: "false"
+```
+
+권한 상태는 `adb shell appops set com.example.gc_uiactivity SYSTEM_ALERT_WINDOW allow|default`
+로 바꿔 양쪽을 모두 확인했다.
+
+### ✅ 프로필 사진 업로드 실패 안내 (2026-08-22)
+
+| # | 시나리오 | 실측 결과 |
+|---|----------|-----------|
+| TC-IMG-001 | `IMAGE_BASE_URL` 없이 업로드 | Storage 가 402 → 토스트 "업로드 실패: 무료(Spark) 요금제에서는 Cloud Storage 를 쓸 수 없습니다. Blaze 로 업그레이드하거나 사진을 다른 곳에 올려 주세요." |
+| TC-IMG-002 | `IMAGE_BASE_URL` 지정 후 업로드 | Storage 를 **호출하지 않고**(`StorageException` 0 건) 사전 안내 토스트 표시 |
+| TC-IMG-003 | 로그아웃 상태에서 업로드 | `user==null` 가드로 "로그인이 필요합니다." (이전에는 `split("@")` 에서 NPE) |
+
+TC-IMG-001 은 Downloads 에 넣은 PNG 를 선택해 실제로 업로드를 시도한 결과다.
+
+```
+E KDJ: 프로필 사진 업로드 실패: 업로드 실패: 무료(Spark) 요금제에서는 Cloud Storage 를
+       쓸 수 없습니다. Blaze 로 업그레이드하거나 사진을 다른 곳에 올려 주세요.
+E KDJ: Caused by: java.io.IOException: { "error": { "code": 402, ...
+```
+
+예전에는 원인과 무관하게 "업로드 실패!" 만 띄웠다.
+
+아래 1 장부터의 시나리오에서 "예상 결과"는 기대값이며 측정값이 아니다.
+0 장에 적힌 값만 실측이다.
 
 ### 사전 조건
 - **활성 상태인 Firebase 프로젝트**와 그 `app/google-services.json`

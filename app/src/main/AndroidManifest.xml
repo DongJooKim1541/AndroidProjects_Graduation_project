@@ -2,6 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     >
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- 잠금화면은 화면이 꺼질 때 백그라운드에서 액티비티를 띄운다.
+         API 29 부터 백그라운드 액티비티 시작은 이 권한을 가진 앱만 허용된다. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- 재부팅 시 lockState 를 미사용으로 되돌리기 위해 부팅 완료를 받는다. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application
         android:allowBackup="true"
         android:networkSecurityConfig="@xml/network_security_config"
@@ -14,6 +19,16 @@
         <activity android:name=".ui.activity.MainActivity">
         </activity>
         <receiver android:name=".lock_screen.ScreenReceiver"></receiver>
+        <!-- ScreenReceiver 와 달리 부팅 완료는 매니페스트 선언으로만 받을 수 있다.
+             (ACTION_SCREEN_OFF 는 반대로 런타임 등록만 가능하다.) -->
+        <receiver
+            android:name=".lock_screen.BootReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
         <service
             android:name=".lock_screen.ScreenService"
             android:enabled="true"

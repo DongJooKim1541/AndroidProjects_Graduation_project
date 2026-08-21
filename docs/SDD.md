@@ -619,9 +619,39 @@ UI만 있고 뒤가 없는 부분이다. 목록은 [README](../README.md#구현�
 - **오답 노트**: `AnswerNoteEndFragment`는 이미지와 정답을 보여줄 뿐이고,
   `WrongAnswerManager`에도 오답을 지우는 경로가 없다. 다시 풀기를 붙이려면
   `LockScreenActivity`의 출제 로직을 오답 목록에서도 쓸 수 있게 분리해야 한다.
-- **잠금화면 지속성**: `ScreenReceiver`는 `ScreenService.onCreate()`에서 런타임
-  등록된다. 매니페스트 선언만으로는 `ACTION_SCREEN_OFF`를 받을 수 없기 때문이다.
-  따라서 프로세스가 죽으면 감지도 멈추고, 부팅 시 되살리는 경로가 없다.
+
+### 9.7 잠금화면 생명주기와 권한 (수정됨)
+
+`ScreenReceiver`는 `ScreenService.onCreate()`에서 **런타임 등록**된다. 매니페스트
+선언만으로는 `ACTION_SCREEN_OFF`를 받을 수 없기 때문이다. 따라서 프로세스가 죽으면
+감지도 멈춘다. 반대로 `BOOT_COMPLETED`는 매니페스트 선언으로만 받을 수 있어
+`BootReceiver`를 등록했다.
+
+| 항목 | 이전 | 현재 |
+|------|------|------|
+| 재부팅 후 | 잠금화면은 꺼지지만 `lockState`는 `true` 로 남아 화면에는 "사용" | `BootReceiver` 가 `lockState` 를 `false` 로 되돌린다 |
+| `SYSTEM_ALERT_WINDOW` | 미선언. targetSdk 29 라 우연히 동작 | 선언 + 스위치를 켤 때 `Settings.canDrawOverlays` 확인 |
+
+권한이 없으면 안내 후 `ACTION_MANAGE_OVERLAY_PERMISSION` 으로 보내고 스위치를
+되돌린다. 이 권한은 위험 권한이 아니라 특별 접근 권한이라 `requestPermissions()`
+로 받을 수 없다.
+
+부팅 시 서비스를 자동으로 되살리지는 않는다. 그 사이 권한이 회수되었을 수 있어,
+동의 없이 되살리는 것보다 꺼진 상태를 정확히 알리는 편이 안전하다.
+
+`BootReceiver` 는 `goAsync()` 로 쓰기가 끝날 때까지 브로드캐스트를 살려 둔다.
+`onReceive` 가 반환하면 프로세스가 정리될 수 있어, 그냥 `setValue` 만 호출하면
+`lockState` 가 그대로 남을 수 있다.
+
+### 9.8 프로필 사진 업로드
+
+업로드는 Cloud Storage 전용이다. 읽기만 `IMAGE_BASE_URL` 로 우회할 수 있는데(3.x
+`ImageSource`), 이 둘은 택일이라 `IMAGE_BASE_URL` 이 설정된 상태에서 Storage 에
+올리면 **올라가도 화면에 보이지 않는다.** 그래서 업로드 전에 막고 안내한다.
+
+실패 시에는 `StorageException.getHttpResultCode()` 를 보고 원인을 구분한다.
+402 는 Spark 요금제 차단이라 코드로 고칠 수 없으므로 무엇을 해야 하는지까지 알린다.
+예전에는 원인과 무관하게 "업로드 실패!" 만 띄웠다.
 
 ### 9.6 문제 출제 키 선택 (수정됨)
 

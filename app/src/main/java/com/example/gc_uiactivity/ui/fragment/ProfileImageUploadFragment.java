@@ -15,6 +15,7 @@ import androidx.annotation.Nullable;
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
 
+import com.example.gc_uiactivity.BuildConfig;
 import com.example.gc_uiactivity.R;
 import com.example.gc_uiactivity.ui.fragment.HomeFragment;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -27,6 +28,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
+import com.google.firebase.storage.StorageException;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
@@ -109,6 +111,22 @@ public class ProfileImageUploadFragment extends Fragment {
     }
 
     public void UploadImage(String user){
+        // 업로드는 Cloud Storage 전용이다. IMAGE_BASE_URL 이 지정되어 있으면 읽기는
+        // 그 HTTP 호스트에서만 하므로(택일), 올려도 화면에는 반영되지 않는다.
+        // 올린 뒤에 안 보이는 것보다 먼저 알리는 편이 낫다.
+        String base = BuildConfig.IMAGE_BASE_URL;
+        if (base != null && !base.trim().isEmpty()) {
+            Toast.makeText(getActivity(),
+                    "IMAGE_BASE_URL 이 설정되어 있어 업로드할 수 없습니다. "
+                            + "사진은 그 주소에 직접 올려 주세요.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        // 로그아웃 상태에서는 user 가 null 이고, 아래 split 에서 죽는다.
+        if (user == null) {
+            Toast.makeText(getActivity(), "로그인이 필요합니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         if(filePath!=null){
             /*CheckTypesTask checkTypesTask=new CheckTypesTask();
             checkTypesTask.execute();*/
@@ -130,7 +148,10 @@ public class ProfileImageUploadFragment extends Fragment {
             }).addOnFailureListener(new OnFailureListener() {
                 @Override
                 public void onFailure(@NonNull Exception e) {
-                    Toast.makeText(getActivity(), "업로드 실패!", Toast.LENGTH_SHORT).show();
+                    // "업로드 실패!" 만 띄우면 요금제 때문인지 네트워크 때문인지 알 수 없다.
+                    String message = uploadFailureMessage(e);
+                    Log.e("KDJ", "프로필 사진 업로드 실패: " + message, e);
+                    Toast.makeText(getActivity(), message, Toast.LENGTH_LONG).show();
                 }
             }).addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
                 @Override
@@ -143,6 +164,28 @@ public class ProfileImageUploadFragment extends Fragment {
         else{
             Toast.makeText(getActivity(), "파일을 먼저 선택하세요.", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    /**
+     * 업로드 실패 원인을 사용자가 읽을 수 있는 문장으로 바꾼다.
+     *
+     * 무료(Spark) 요금제에서는 Cloud Storage 가 HTTP 402 로 거부된다. 코드로 고칠 수
+     * 없는 문제라 무엇을 해야 하는지까지 알려 준다.
+     */
+    private String uploadFailureMessage(Exception e) {
+        if (e instanceof StorageException) {
+            StorageException se = (StorageException) e;
+            if (se.getHttpResultCode() == 402) {
+                return "업로드 실패: 무료(Spark) 요금제에서는 Cloud Storage 를 쓸 수 없습니다. "
+                        + "Blaze 로 업그레이드하거나 사진을 다른 곳에 올려 주세요.";
+            }
+            if (se.getErrorCode() == StorageException.ERROR_NOT_AUTHENTICATED
+                    || se.getErrorCode() == StorageException.ERROR_NOT_AUTHORIZED) {
+                return "업로드 실패: 저장소 접근 권한이 없습니다. 다시 로그인해 주세요.";
+            }
+            return "업로드 실패: 저장소 오류 (" + se.getHttpResultCode() + ")";
+        }
+        return "업로드 실패: " + (e.getMessage() == null ? "원인을 알 수 없습니다." : e.getMessage());
     }
 
     @Override

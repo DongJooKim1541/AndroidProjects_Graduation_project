@@ -1,5 +1,6 @@
 package com.example.gc_uiactivity.ui.adapter;
 
+import com.example.gc_uiactivity.lock_screen.OverlayPermission;
 import com.example.gc_uiactivity.lock_screen.ScreenService;
 import com.example.gc_uiactivity.lock_screen.ShowForegroundService;
 import android.content.Context;
@@ -33,6 +34,8 @@ public class OptionSwitchAdapter extends ArrayAdapter<String> {
     private ArrayList<String> arr;
     private ListView myList;
     LayoutInflater layoutInflater;
+    /** 스위치를 코드로 되돌릴 때 리스너가 다시 도는 것을 막는다. */
+    private boolean suppressChange = false;
     //생성자
     public OptionSwitchAdapter(Context context, int resource, ArrayList<String> arr, ListView myList){
         super(context,resource,arr);
@@ -112,6 +115,16 @@ public class OptionSwitchAdapter extends ArrayAdapter<String> {
             final DatabaseReference stateInfoRef=rootRef.child("계정 정보");
             @Override
             public void onCheckedChanged(CompoundButton buttonView, final boolean isChecked) {
+                if (suppressChange) {
+                    return;
+                }
+                // 권한이 없으면 서비스를 켜도 잠금화면이 뜨지 않는다. DB 를 건드리기
+                // 전에 막고 스위치도 원래대로 되돌린다.
+                if (isChecked && !OverlayPermission.isGranted(context)) {
+                    OverlayPermission.request(context);
+                    revert(buttonView);
+                    return;
+                }
                 currMembers.addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -162,6 +175,13 @@ public class OptionSwitchAdapter extends ArrayAdapter<String> {
     }
 
 
+
+    /** 스위치를 끈 상태로 되돌린다. 리스너 재진입은 플래그로 막는다. */
+    private void revert(CompoundButton button) {
+        suppressChange = true;
+        button.setChecked(false);
+        suppressChange = false;
+    }
 
     public void onStartForegroundService(){
         Intent intent=new Intent(context, ShowForegroundService.class);

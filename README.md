@@ -7,7 +7,7 @@
 ## 개요
 
 휴대폰 잠금을 해제할 때마다 퀴즈를 띄우고, 정답을 맞히면 포인트를 지급하는 Android 애플리케이션입니다.
-틀린 문제는 오답 노트에 자동으로 기록되어 나중에 복습할 수 있습니다.
+틀린 문제는 오답 노트에 자동으로 기록되어 문제와 정답을 나중에 다시 확인할 수 있습니다.
 
 ## 주요 기능
 
@@ -29,9 +29,27 @@
 | 홈 화면 — 이벤트 / 서비스 1·2·3 / 광고 | 아이콘과 클릭 처리만 있고 "준비중입니다" 토스트만 표시 |
 | 포인트 상점 (`CashFragment`) | 1,000~50,000 포인트를 **차감만** 하고 상품·쿠폰을 지급하지 않음. 교환 내역도 남기지 않음 |
 | 오답 노트 | 열람 전용. 오답을 다시 풀거나, 맞히면 목록에서 지우는 기능은 없음 |
-| 프로필 사진 업로드 | 읽기는 `IMAGE_BASE_URL`로 대체할 수 있으나 **업로드는 Cloud Storage 전용**이라 Spark 요금제에서는 실패 |
-| 잠금화면 지속성 | 재부팅 시 자동으로 다시 켜지지 않음(`RECEIVE_BOOT_COMPLETED` 미사용). DB의 `lockState`는 `true`로 남아 홈 화면에는 "사용"으로 보임 |
-| 오버레이 권한 | `SYSTEM_ALERT_WINDOW`를 선언하지 않음. targetSdk 29라 현재는 동작하지만 targetSdk를 올리면 잠금화면이 뜨지 않음 |
+| 프로필 사진 업로드 | **업로드는 Cloud Storage 전용**이라 Spark 요금제에서는 실패한다. 실패하면 원인(요금제/권한/네트워크)을 토스트로 알린다 |
+
+## 잠금화면 사용 시 알아 둘 점
+
+### '다른 앱 위에 표시' 권한이 필요합니다
+
+잠금화면은 화면이 꺼질 때 백그라운드에서 액티비티를 띄웁니다. Android 10(API 29)
+부터 백그라운드 액티비티 시작은 `SYSTEM_ALERT_WINDOW` 권한을 가진 앱만 허용됩니다.
+
+설정에서 스위치를 켤 때 권한이 없으면 안내 후 권한 설정 화면으로 이동하고,
+스위치는 꺼진 상태로 되돌아갑니다. 권한을 허용한 뒤 다시 켜세요.
+
+### 재부팅하면 '미사용'으로 초기화됩니다
+
+화면 꺼짐 감지는 `ScreenService`가 살아 있는 동안만 동작하므로 재부팅하면 잠금화면이
+실제로 꺼집니다. 그래서 부팅 시 DB의 `lockState`도 `false`로 되돌립니다.
+표시와 실제가 어긋나 잠금화면이 켜져 있다고 오해하는 것을 막기 위한 것입니다.
+
+부팅 시 자동으로 다시 켜지지는 않습니다. 권한이 회수되었을 수도 있어, 동의 없이
+되살리는 것보다 꺼진 상태를 정확히 알리는 편을 택했습니다. 계속 쓰려면 재부팅 후
+설정에서 다시 켜세요.
 
 ## 기술 스택
 
@@ -117,6 +135,8 @@ cd AndroidProjects_Graduation_project
 app/src/main/java/com/example/gc_uiactivity/
 ├── firebase/       DatabaseManager, PointManager, WrongAnswerManager — Firebase 접근 통합
 ├── lock_screen/    ScreenReceiver, ScreenService, ShowForegroundService — 잠금화면 감지
+│                  BootReceiver — 재부팅 시 lockState 초기화
+│                  OverlayPermission — '다른 앱 위에 표시' 권한 확인·요청
 ├── viewmodels/     AuthViewModel, MainActivityViewModel, LockScreenViewModel, ViewModelFactory
 └── ui/
     ├── activity/   Splash, Login, SignUp, Main, LockScreen
